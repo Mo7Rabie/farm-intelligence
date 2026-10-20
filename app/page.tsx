@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Charts from "./charts";
 
 type Farm = { id: string; name: string; location: string | null };
 type Expense = {
@@ -148,6 +149,8 @@ export default function Home() {
               <p className="mt-1 text-2xl font-medium">{expenses.length}</p>
             </div>
           </section>
+
+          {expenses.length > 0 && <Charts expenses={expenses} farms={farms} />}
 
           <section className="mt-6 grid gap-4 md:grid-cols-2">
             <form onSubmit={addFarm} className="rounded-xl border border-zinc-200 p-4">
