@@ -103,6 +103,12 @@ export default function Home() {
     });
     if (error) setError(error.message); else { form.reset(); await load(); }
   }
+async function deleteExpense(id: string) {
+  if (!confirm("هل تريد حذف هذا المصروف؟")) return;
+  setError(null);
+  const { error } = await createClient().from("expenses").delete().eq("id", id);
+  if (error) setError(error.message); else await load();
+}
 
   if (loading) return <main className="p-6 text-zinc-500">جارٍ التحميل...</main>;
 
@@ -191,7 +197,7 @@ export default function Home() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-right text-zinc-500">
-                    <th className="py-1">التاريخ</th><th>المزرعة</th><th>الفئة</th><th>المبلغ</th>
+                    <th className="py-1">التاريخ</th><th>المزرعة</th><th>الفئة</th><th>المبلغ</th><th>إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,6 +207,7 @@ export default function Home() {
                       <td>{farmName(x.farm_id)}</td>
                       <td>{x.category}</td>
                       <td>{Number(x.amount).toLocaleString("en-US")} {x.currency}</td>
+<td><button onClick={() => deleteExpense(x.id)} className="text-xs text-red-700 underline">حذف</button></td>
                     </tr>
                   ))}
                 </tbody>
