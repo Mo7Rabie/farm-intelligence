@@ -109,6 +109,12 @@ async function deleteExpense(id: string) {
   const { error } = await createClient().from("expenses").delete().eq("id", id);
   if (error) setError(error.message); else await load();
 }
+async function deleteFarm(id: string) {
+  if (!confirm("حذف المزرعة سيحذف كل مصروفاتها. هل أنت متأكد؟")) return;
+  setError(null);
+  const { error } = await createClient().from("farms").delete().eq("id", id);
+  if (error) setError(error.message); else await load();
+}
 
   if (loading) return <main className="p-6 text-zinc-500">جارٍ التحميل...</main>;
 
@@ -190,6 +196,22 @@ async function deleteExpense(id: string) {
           </section>
 
           <section className="mt-6 rounded-xl border border-zinc-200 p-4">
+  <p className="mb-3 font-medium">المزارع</p>
+  {farms.length === 0 ? (
+    <p className="text-sm text-zinc-500">لا توجد مزارع بعد</p>
+  ) : (
+    <ul className="text-sm">
+      {farms.map((f) => (
+        <li key={f.id} className="flex items-center justify-between border-t border-zinc-100 py-1.5 first:border-t-0">
+          <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
+          <button onClick={() => deleteFarm(f.id)} className="text-xs text-red-700 underline">حذف</button>
+        </li>
+      ))}
+    </ul>
+  )}
+</section>
+
+<section className="mt-6 rounded-xl border border-zinc-200 p-4">
             <p className="mb-3 font-medium">آخر المصروفات</p>
             {expenses.length === 0 ? (
               <p className="text-sm text-zinc-500">لا توجد بيانات بعد</p>
