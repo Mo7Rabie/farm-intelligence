@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Charts from "./charts";
 import EditExpense from "./edit-expense";
+import EditFarm from "./edit-farm";
 type Farm = { id: string; name: string; location: string | null };
 type Expense = {
   id: string; farm_id: string; expense_date: string;
@@ -26,6 +27,7 @@ export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -171,6 +173,7 @@ async function deleteFarm(id: string) {
 
           {expenses.length > 0 && <Charts expenses={expenses} farms={farms} />}
           {editing && <EditExpense key={editing.id} expense={editing} farms={farms} categories={CATEGORIES} onDone={async (changed) => { setEditing(null); if (changed) await load(); }} />}
+            {editingFarm && <EditFarm key={editingFarm.id} farm={editingFarm} onDone={async (changed) => { setEditingFarm(null); if (changed) await load(); }} />}
 
           <section className="mt-6 grid gap-4 md:grid-cols-2">
             <form onSubmit={addFarm} className="rounded-xl border border-zinc-200 p-4">
@@ -212,8 +215,9 @@ async function deleteFarm(id: string) {
       {farms.map((f) => (
         <li key={f.id} className="flex items-center justify-between border-t border-zinc-100 py-1.5 first:border-t-0">
           <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
-          <button onClick={() => deleteFarm(f.id)} className="text-xs text-red-700 underline">حذف</button>
-        </li>
+<span className="space-x-3 space-x-reverse"><button onClick={() => setEditingFarm(f)} className="text-xs text-green-800 underline">تعديل</button><button onClick={() => deleteFarm(f.id)} className="text-xs text-red-700 underline">حذف</button></span>
+</li>
+
       ))}
     </ul>
   )}
