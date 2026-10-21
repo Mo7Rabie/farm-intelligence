@@ -110,10 +110,16 @@ async function deleteExpense(id: string) {
   if (error) setError(error.message); else await load();
 }
 async function deleteFarm(id: string) {
-  if (!confirm("حذف المزرعة سيحذف كل مصروفاتها. هل أنت متأكد؟")) return;
+  if (!confirm("هل تريد حذف هذه المزرعة؟")) return;
   setError(null);
   const { error } = await createClient().from("farms").delete().eq("id", id);
-  if (error) setError(error.message); else await load();
+  if (error) {
+    setError(
+      error.code === "23503"
+        ? "لا يمكن حذف مزرعة عليها مصروفات. احذف مصروفاتها الأول."
+        : error.message
+    );
+  } else await load();
 }
 
   if (loading) return <main className="p-6 text-zinc-500">جارٍ التحميل...</main>;
