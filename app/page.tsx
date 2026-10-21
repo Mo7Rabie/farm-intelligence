@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Charts from "./charts";
-
+import EditExpense from "./edit-expense";
 type Farm = { id: string; name: string; location: string | null };
 type Expense = {
   id: string; farm_id: string; expense_date: string;
@@ -25,6 +25,7 @@ export default function Home() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Expense | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -169,6 +170,7 @@ async function deleteFarm(id: string) {
           </section>
 
           {expenses.length > 0 && <Charts expenses={expenses} farms={farms} />}
+          {editing && <EditExpense key={editing.id} expense={editing} farms={farms} categories={CATEGORIES} onDone={async (changed) => { setEditing(null); if (changed) await load(); }} />}
 
           <section className="mt-6 grid gap-4 md:grid-cols-2">
             <form onSubmit={addFarm} className="rounded-xl border border-zinc-200 p-4">
@@ -235,8 +237,8 @@ async function deleteFarm(id: string) {
                       <td>{farmName(x.farm_id)}</td>
                       <td>{x.category}</td>
                       <td>{Number(x.amount).toLocaleString("en-US")} {x.currency}</td>
-<td><button onClick={() => deleteExpense(x.id)} className="text-xs text-red-700 underline">حذف</button></td>
-                    </tr>
+<td className="space-x-3 space-x-reverse"><button onClick={() => setEditing(x)} className="text-xs text-green-800 underline">تعديل</button><button onClick={() => deleteExpense(x.id)} className="text-xs text-red-700 underline">حذف</button></td>
+</tr>
                   ))}
                 </tbody>
               </table>
