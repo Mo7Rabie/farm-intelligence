@@ -10,12 +10,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
+    setOk(false);
     const supabase = createClient();
 
     if (mode === "signin") {
@@ -26,8 +28,20 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) setMsg("تعذر إنشاء الحساب: " + error.message);
       else if (data.session) router.push("/");
-      else setMsg("تم إنشاء الحساب. افتح بريدك واضغط رابط التأكيد، ثم سجّل الدخول.");
+      else { setOk(true); setMsg("تم إنشاء الحساب. افتح بريدك واضغط رابط التأكيد، ثم سجّل الدخول."); }
     }
+    setBusy(false);
+  }
+
+  async function forgot() {
+    if (!email) { setOk(false); setMsg("اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور؟»"); return; }
+    setBusy(true);
+    setMsg(null);
+    const { error } = await createClient().auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/reset-password",
+    });
+    if (error) { setOk(false); setMsg("تعذر إرسال الرابط: " + error.message); }
+    else { setOk(true); setMsg("تم إرسال رابط إعادة التعيين إلى بريدك. افتحه واتبع الخطوات."); }
     setBusy(false);
   }
 
@@ -54,7 +68,13 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {msg && <p className="mt-3 text-sm text-red-700">{msg}</p>}
+      {msg && <p className={"mt-3 text-sm " + (ok ? "text-green-800" : "text-red-700")}>{msg}</p>}
+
+      {mode === "signin" && (
+        <button type="button" onClick={forgot} disabled={busy} className="mt-3 block text-sm text-zinc-600 underline">
+          نسيت كلمة المرور؟
+        </button>
+      )}
 
       <button
         onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMsg(null); }}
