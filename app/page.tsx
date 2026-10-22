@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Charts from "./charts";
 import EditExpense from "./edit-expense";
 import EditFarm from "./edit-farm";
+import ExpensesTable from "./expenses-table";
 type Farm = { id: string; name: string; location: string | null };
 type Expense = {
   id: string; farm_id: string; expense_date: string;
@@ -223,31 +224,7 @@ async function deleteFarm(id: string) {
   )}
 </section>
 
-<section className="mt-6 rounded-xl border border-zinc-200 p-4">
-            <p className="mb-3 font-medium">آخر المصروفات</p>
-            {expenses.length === 0 ? (
-              <p className="text-sm text-zinc-500">لا توجد بيانات بعد</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-right text-zinc-500">
-                    <th className="py-1">التاريخ</th><th>المزرعة</th><th>الفئة</th><th>المبلغ</th><th>إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.slice(0, 10).map((x) => (
-                    <tr key={x.id} className="border-t border-zinc-100">
-                      <td className="py-1.5">{x.expense_date}</td>
-                      <td>{farmName(x.farm_id)}</td>
-                      <td>{x.category}</td>
-                      <td>{Number(x.amount).toLocaleString("en-US")} {x.currency}</td>
-<td className="space-x-3 space-x-reverse"><button onClick={() => setEditing(x)} className="text-xs text-green-800 underline">تعديل</button><button onClick={() => deleteExpense(x.id)} className="text-xs text-red-700 underline">حذف</button></td>
-</tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
+<ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={setEditing} onDelete={deleteExpense} />
         </>
       )}
     </main>
