@@ -7,6 +7,7 @@ import Charts from "./charts";
 import EditExpense from "./edit-expense";
 import EditFarm from "./edit-farm";
 import ExpensesTable from "./expenses-table";
+import InviteMember from "./invite-member";
 type Farm = { id: string; name: string; location: string | null };
 type Expense = {
   id: string; farm_id: string; expense_date: string;
@@ -225,6 +226,7 @@ async function deleteFarm(id: string) {
 </section>
 
 <ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={setEditing} onDelete={deleteExpense} />
+{farms.length > 0 && orgId && <InviteMember orgId={orgId} />}
         </>
       )}
     </main>
