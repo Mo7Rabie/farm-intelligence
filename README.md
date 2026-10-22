@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Farm Intelligence
 
-## Getting Started
+منصة سحابية متعددة المؤسسات لإدارة وتحليل بيانات المزارع: تسجيل المزارع والمصروفات، ولوحة مؤشرات ورسوم بيانية، مع عزل كامل لبيانات كل مؤسسة.
 
-First, run the development server:
+**الموقع المباشر:** https://farm-intelligence-black.vercel.app
+
+## المميزات
+
+- تسجيل الدخول وإنشاء الحساب، مع تأكيد البريد وإعادة تعيين كلمة المرور
+- مؤسسات متعددة، وبيانات كل مؤسسة معزولة عن غيرها (Row Level Security)
+- إضافة وتعديل وحذف المزارع
+- تسجيل وتعديل وحذف المصروفات حسب الفئة (عمالة، مياه وري، أسمدة، ...)
+- مؤشرات إجمالية ورسوم بيانية شهرية وحسب الفئة والمزرعة
+- رسائل خطأ واضحة (مثل منع حذف مزرعة عليها مصروفات)
+
+## التقنيات
+
+- **الواجهة:** Next.js (App Router) + React + TypeScript + Tailwind CSS
+- **الخلفية وقاعدة البيانات:** Supabase (Auth + PostgreSQL + RLS)
+- **النشر:** Vercel (نشر تلقائي مع كل `git push`)
+
+## هيكل البيانات
+
+- `organizations` و`organization_members`: المؤسسات وأعضاؤها
+- `farms`: المزارع التابعة لكل مؤسسة
+- `expenses`: المصروفات المرتبطة بالمزارع (العملة الافتراضية AED)
+- دالة `create_organization` (RPC) لإنشاء مؤسسة وربط منشئها بها
+- ملفات SQL موجودة في مجلد `supabase/`
+
+## التشغيل محليًا
+
+1. تثبيت الحزم:
+
+```bash
+npm install
+```
+
+2. إنشاء ملف `.env.local` بناءً على `.env.local.example` وإضافة مفاتيح مشروع Supabase.
+
+3. تشغيل المشروع:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ثم افتح http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## إعدادات Supabase المطلوبة
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+في Authentication ثم URL Configuration:
 
-## Learn More
+- **Site URL:** رابط الموقع المنشور
+- **Redirect URLs:** رابط الموقع مع `/**` وكذلك `http://localhost:3000/**`
 
-To learn more about Next.js, take a look at the following resources:
+## خطة التطوير
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] المصادقة والمؤسسات والمزارع والمصروفات
+- [x] الرسوم البيانية
+- [x] تعديل وحذف المزارع والمصروفات
+- [x] إعادة تعيين كلمة المرور
+- [ ] دعوة مستخدمين بأدوار
+- [ ] فلاتر وتصدير CSVٍ
