@@ -34,8 +34,7 @@ export default function ResetPasswordPage() {
     else {
       setOk(true);
       setMsg("تم تغيير كلمة المرور بنجاح. جارٍ تحويلك...");
-      setTimeout(() => router.push("/"), 1500);
-    }
+setTimeout(() => { window.location.href = "/"; }, 1500);    }
     setBusy(false);
   }
 
