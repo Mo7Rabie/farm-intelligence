@@ -23,12 +23,11 @@ export default function InviteMember({ orgId }: { orgId: string }) {
     const fd = new FormData(form);
     setError(null);
     setOk(null);
-    const { error } = await createClient().rpc("add_member_by_email", {
-      p_org: orgId,
-      p_email: String(fd.get("email") ?? ""),
-      p_role: String(fd.get("role") ?? "viewer"),
-    });
-    if (error) setError(error.message);
+    const fd2 = Object.fromEntries(fd);
+const { error } = await createClient().functions.invoke("invite-member", {
+  body: { orgId, email: String(fd2.email ?? ""), role: String(fd2.role ?? "viewer") },
+});
+    if (error) { const b = await (error as any).context?.json?.().catch(() => null); setError(b?.error ?? error.message); }
     else { setOk("تمت إضافة العضو"); form.reset(); }
   }
 
