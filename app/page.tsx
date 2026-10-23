@@ -8,6 +8,7 @@ import EditExpense from "./edit-expense";
 import EditFarm from "./edit-farm";
 import ExpensesTable from "./expenses-table";
 import InviteMember from "./invite-member";
+import MembersPanel from "./members-panel";
 type Farm = { id: string; name: string; location: string | null };
 type Expense = {
   id: string; farm_id: string; expense_date: string;
@@ -231,7 +232,7 @@ async function deleteFarm(id: string) {
 </section>
 
 <ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={canWriteExpenses ? setEditing : undefined} onDelete={canWriteExpenses ? deleteExpense : undefined} />
-{isOwner && orgId && <InviteMember orgId={orgId} />}
+{isOwner && orgId && <><InviteMember orgId={orgId} /><MembersPanel orgId={orgId} /></>}
         </>
       )}
     </main>
