@@ -14,8 +14,8 @@ export default function ExpensesTable({
   expenses: Expense[];
   farms: Farm[];
   categories: string[];
-  onEdit: (x: Expense) => void;
-  onDelete: (id: string) => void;
+    onEdit?: (x: Expense) => void;
+  onDelete?: (id: string) => void;
 }) {
   const [farmId, setFarmId] = useState("");
   const [category, setCategory] = useState("");
@@ -109,9 +109,9 @@ const csv = "\uFEFF" +  [head.map(esc).join(";"), ...lines].join("\r\n");
                   <td>{x.category}</td>
                   <td>{Number(x.amount).toLocaleString("en-US")} {x.currency}</td>
                   <td className="space-x-3 space-x-reverse">
-                    <button onClick={() => onEdit(x)} className="text-xs text-green-800 underline">تعديل</button>
-                    <button onClick={() => onDelete(x.id)} className="text-xs text-red-700 underline">حذف</button>
-                  </td>
+  {onEdit && <button onClick={() => onEdit(x)} className="text-xs text-green-800 underline">تعديل</button>}
+  {onDelete && <button onClick={() => onDelete(x.id)} className="text-xs text-red-700 underline">حذف</button>}
+</td>
                 </tr>
               ))}
             </tbody>

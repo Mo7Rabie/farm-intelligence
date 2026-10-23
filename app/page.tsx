@@ -24,7 +24,8 @@ export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState<string | null>(null);
-  const [orgName, setOrgName] = useState("");
+   const [orgName, setOrgName] = useState("");
+  const [role, setRole] = useState("");
   const [farms, setFarms] = useState<Farm[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,8 @@ export default function Home() {
     const { data: mem, error: memErr } = await supabase
       .from("organization_members")
       .select("organization_id, role, organizations(name)")
-      .limit(1);
+      .eq("user_id", userData.user.id)
+    .limit(1);
     if (memErr) { setError(memErr.message); setLoading(false); return; }
 
     const m = (mem as unknown as Membership[] | null)?.[0];
@@ -47,7 +49,8 @@ export default function Home() {
 
     const org = Array.isArray(m.organizations) ? m.organizations[0] : m.organizations;
     setOrgId(m.organization_id);
-    setOrgName(org?.name ?? "");
+        setOrgName(org?.name ?? "");
+    setRole(m.role);
 
     const [f, e] = await Promise.all([
       supabase.from("farms").select("id, name, location").eq("organization_id", m.organization_id).order("created_at"),
@@ -133,14 +136,16 @@ async function deleteFarm(id: string) {
   const farmName = (id: string) => farms.find((f) => f.id === id)?.name ?? "—";
   const input = "rounded-lg border border-zinc-300 p-2 text-sm";
   const btn = "rounded-lg bg-green-800 px-4 py-2 text-sm text-white";
+    const canWriteFarms = ["owner", "farm_manager"].includes(role);
+  const canWriteExpenses = ["owner", "farm_manager", "accountant"].includes(role);
+  const isOwner = role === "owner";
 
   return (
     <main className="mx-auto max-w-5xl p-6">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-green-900">Farm Intelligence</h1>
           <p className="text-sm text-zinc-500">{orgName || "منصة إدارة وتحليل بيانات المزارع"}</p>
-        </div>
+                  </div>
         <button onClick={signOut} className="text-sm text-zinc-600 underline">تسجيل الخروج</button>
       </header>
 
@@ -177,17 +182,17 @@ async function deleteFarm(id: string) {
           {editing && <EditExpense key={editing.id} expense={editing} farms={farms} categories={CATEGORIES} onDone={async (changed) => { setEditing(null); if (changed) await load(); }} />}
             {editingFarm && <EditFarm key={editingFarm.id} farm={editingFarm} onDone={async (changed) => { setEditingFarm(null); if (changed) await load(); }} />}
 
-          <section className="mt-6 grid gap-4 md:grid-cols-2">
-            <form onSubmit={addFarm} className="rounded-xl border border-zinc-200 p-4">
+          <section className={"mt-6 grid gap-4 " + (canWriteFarms && canWriteExpenses ? "md:grid-cols-2" : "")}>
+            {canWriteFarms && <form onSubmit={addFarm} className="rounded-xl border border-zinc-200 p-4">
               <p className="mb-3 font-medium">إضافة مزرعة</p>
               <div className="flex flex-col gap-2">
                 <input name="name" required placeholder="اسم المزرعة" className={input} />
                 <input name="location" placeholder="الموقع (اختياري)" className={input} />
                 <button className={btn}>إضافة</button>
               </div>
-            </form>
+            </form>}
 
-            <form onSubmit={addExpense} className="rounded-xl border border-zinc-200 p-4">
+            {canWriteExpenses && <form onSubmit={addExpense} className="rounded-xl border border-zinc-200 p-4">
               <p className="mb-3 font-medium">تسجيل مصروف</p>
               {farms.length === 0 ? (
                 <p className="text-sm text-zinc-500">أضف مزرعة أولًا.</p>
@@ -205,7 +210,7 @@ async function deleteFarm(id: string) {
                   <button className={btn}>تسجيل</button>
                 </div>
               )}
-            </form>
+            </form>}
           </section>
 
           <section className="mt-6 rounded-xl border border-zinc-200 p-4">
@@ -217,7 +222,7 @@ async function deleteFarm(id: string) {
       {farms.map((f) => (
         <li key={f.id} className="flex items-center justify-between border-t border-zinc-100 py-1.5 first:border-t-0">
           <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
-<span className="space-x-3 space-x-reverse"><button onClick={() => setEditingFarm(f)} className="text-xs text-green-800 underline">تعديل</button><button onClick={() => deleteFarm(f.id)} className="text-xs text-red-700 underline">حذف</button></span>
+{canWriteFarms && <span className="space-x-3 space-x-reverse"><button onClick={() => setEditingFarm(f)} className="text-xs text-green-800 underline">تعديل</button><button onClick={() => deleteFarm(f.id)} className="text-xs text-red-700 underline">حذف</button></span>}
 </li>
 
       ))}
@@ -225,8 +230,8 @@ async function deleteFarm(id: string) {
   )}
 </section>
 
-<ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={setEditing} onDelete={deleteExpense} />
-{farms.length > 0 && orgId && <InviteMember orgId={orgId} />}
+<ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={canWriteExpenses ? setEditing : undefined} onDelete={canWriteExpenses ? deleteExpense : undefined} />
+{isOwner && orgId && <InviteMember orgId={orgId} />}
         </>
       )}
     </main>
