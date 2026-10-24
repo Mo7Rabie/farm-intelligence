@@ -1,80 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { LogOut, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Charts from "./charts";
-import EditExpense from "./edit-expense";
-import EditFarm from "./edit-farm";
-import ExpensesTable from "./expenses-table";
-import InviteMember from "./invite-member";
-import MembersPanel from "./members-panel";
-type Farm = { id: string; name: string; location: string | null };
-type Expense = {
-  id: string; farm_id: string; expense_date: string;
-  category: string; description: string | null; amount: number; currency: string;
-};
-type Membership = {
-  organization_id: string; role: string;
-  organizations: { name: string } | { name: string }[] | null;
-};
+import { useData } from "./use-data";
 
-const CATEGORIES = ["عمالة", "مياه وري", "أسمدة", "شتلات", "مبيدات", "معدات", "وقود", "صيانة", "نقل", "أخرى"];
+const ROLES: Record<string, string> = {
+  owner: "مالك", farm_manager: "مدير مزرعة", accountant: "محاسب",
+  supervisor: "مشرف", analyst: "محلل", viewer: "مشاهد",
+};
 
 export default function Home() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [orgId, setOrgId] = useState<string | null>(null);
-   const [orgName, setOrgName] = useState("");
-  const [role, setRole] = useState("");
-  const [farms, setFarms] = useState<Farm[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Expense | null>(null);
-  const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
-    const [budgets, setBudgets] = useState<Record<string, number>>({});
-  const load = useCallback(async () => {
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) { router.replace("/login"); return; }
-
-    const { data: mem, error: memErr } = await supabase
-      .from("organization_members")
-      .select("organization_id, role, organizations(name)")
-      .eq("user_id", userData.user.id)
-    .limit(1);
-    if (memErr) { setError(memErr.message); setLoading(false); return; }
-
-    const m = (mem as unknown as Membership[] | null)?.[0];
-    if (!m) { setOrgId(null); setLoading(false); return; }
-
-    const org = Array.isArray(m.organizations) ? m.organizations[0] : m.organizations;
-    setOrgId(m.organization_id);
-        setOrgName(org?.name ?? "");
-    setRole(m.role);
-
-            const [f, e, b] = await Promise.all([
-      supabase.from("farms").select("id, name, location").eq("organization_id", m.organization_id).order("created_at"),
-      supabase.from("expenses").select("id, farm_id, expense_date, category, description, amount, currency")
-                        .eq("organization_id", m.organization_id).order("expense_date", { ascending: false }),
-      supabase.from("farm_budgets").select("farm_id, monthly_budget").eq("organization_id", m.organization_id),
-        ]);
-    if (f.error || e.error) setError((f.error ?? e.error)!.message);
-        setExpenses((e.data as Expense[]) ?? []);
-    setFarms((f.data as Farm[]) ?? []);
-        setBudgets(Object.fromEntries(((b.data as { farm_id: string; monthly_budget: number }[]) ?? []).map((x) => [x.farm_id, Number(x.monthly_budget)])));
-    setLoading(false);
-  }, [router]);
-
-  // تحميل البيانات عند فتح الصفحة (استخدام مشروع لمزامنة حالة خارجية)
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { void load(); }, [load]);
-
-  async function signOut() {
-    await createClient().auth.signOut();
-    router.replace("/login");
-  }
+  const { loading, orgId, orgName, role, farms, expenses, error, setError, load, signOut } = useData();
 
   async function createOrg(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -85,79 +23,24 @@ export default function Home() {
     if (error) setError(error.message); else await load();
   }
 
-  async function addFarm(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const name = String(fd.get("name") ?? "").trim();
-    if (!name || !orgId) return;
-    setError(null);
-    const { error } = await createClient().from("farms").insert({
-      organization_id: orgId, name, location: String(fd.get("location") ?? "").trim() || null,
-    });
-    if (error) setError(error.message); else { form.reset(); await load(); }
-  }
+  if (loading) return <p className="text-zinc-500">جارٍ التحميل...</p>;
 
-  async function addExpense(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const amount = Number(fd.get("amount"));
-    if (!orgId || !Number.isFinite(amount) || amount < 0) { setError("المبلغ غير صحيح"); return; }
-    setError(null);
-    const { error } = await createClient().from("expenses").insert({
-      organization_id: orgId,
-      farm_id: String(fd.get("farm_id")),
-      expense_date: String(fd.get("expense_date")),
-      category: String(fd.get("category")),
-      description: String(fd.get("description") ?? "").trim() || null,
-      amount,
-    });
-    if (error) setError(error.message); else { form.reset(); await load(); }
-  }
-async function deleteExpense(id: string) {
-  if (!confirm("هل تريد حذف هذا المصروف؟")) return;
-  setError(null);
-  const { error } = await createClient().from("expenses").delete().eq("id", id);
-  if (error) setError(error.message); else await load();
-}
-async function saveBudget(farmId: string, value: string) {
-  const amount = Number(value);
-  if (!orgId || !Number.isFinite(amount) || amount < 0) { setError("الميزانية غير صحيحة"); return; }
-  setError(null);
-  const { error } = await createClient().from("farm_budgets").upsert({ farm_id: farmId, organization_id: orgId, monthly_budget: amount, updated_at: new Date().toISOString() });
-  if (error) setError(error.message); else await load();
-}
-async function deleteFarm(id: string) {
-  if (!confirm("هل تريد حذف هذه المزرعة؟")) return;
-  setError(null);
-  const { error } = await createClient().from("farms").delete().eq("id", id);
-  if (error) {
-    setError(
-      error.code === "23503"
-        ? "لا يمكن حذف مزرعة عليها مصروفات. احذف مصروفاتها الأول."
-        : error.message
-    );
-  } else await load();
-}
-
-  if (loading) return <main className="p-6 text-zinc-500">جارٍ التحميل...</main>;
-
+  const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const month = new Date().toISOString().slice(0, 7);
   const total = expenses.reduce((s, x) => s + Number(x.amount), 0);
+  const monthTotal = expenses.filter((x) => x.expense_date.startsWith(month)).reduce((s, x) => s + Number(x.amount), 0);
   const farmName = (id: string) => farms.find((f) => f.id === id)?.name ?? "—";
   const input = "rounded-lg border border-zinc-300 p-2 text-sm";
   const btn = "rounded-lg bg-green-800 px-4 py-2 text-sm text-white";
-    const canWriteFarms = ["owner", "farm_manager"].includes(role);
-  const canWriteExpenses = ["owner", "farm_manager", "accountant"].includes(role);
-  const isOwner = role === "owner";
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <div>
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-sm text-zinc-500">{orgName || "منصة إدارة وتحليل بيانات المزارع"}</p>
-                  </div>
-                <button onClick={signOut} className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100"><LogOut size={16} />تسجيل الخروج</button>
+          <h1 className="text-xl font-bold">لوحة التحكم</h1>
+          <p className="text-sm text-zinc-500">{orgName}{role ? ` — ${ROLES[role] ?? role}` : ""}</p>
+        </div>
+        <button onClick={signOut} className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100"><LogOut size={16} />تسجيل الخروج</button>
       </header>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
@@ -172,98 +55,59 @@ async function deleteFarm(id: string) {
         </form>
       ) : (
         <>
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="rounded-lg bg-zinc-100 p-4">
               <p className="text-xs text-zinc-500">عدد المزارع</p>
               <p className="mt-1 text-2xl font-medium">{farms.length}</p>
             </div>
             <div className="rounded-lg bg-zinc-100 p-4">
               <p className="text-xs text-zinc-500">إجمالي المصروفات (AED)</p>
-              <p className="mt-1 text-2xl font-medium">
-                {expenses.length ? total.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"}
-              </p>
+              <p className="mt-1 text-2xl font-medium">{expenses.length ? fmt(total) : "—"}</p>
             </div>
             <div className="rounded-lg bg-zinc-100 p-4">
-              <p className="text-xs text-zinc-500">عدد سجلات المصروفات</p>
+              <p className="text-xs text-zinc-500">مصروفات هذا الشهر (AED)</p>
+              <p className="mt-1 text-2xl font-medium">{fmt(monthTotal)}</p>
+            </div>
+            <div className="rounded-lg bg-zinc-100 p-4">
+              <p className="text-xs text-zinc-500">عدد السجلات</p>
               <p className="mt-1 text-2xl font-medium">{expenses.length}</p>
             </div>
           </section>
 
           {expenses.length > 0 && <Charts expenses={expenses} farms={farms} />}
-          {editing && <EditExpense key={editing.id} expense={editing} farms={farms} categories={CATEGORIES} onDone={async (changed) => { setEditing(null); if (changed) await load(); }} />}
-            {editingFarm && <EditFarm key={editingFarm.id} farm={editingFarm} onDone={async (changed) => { setEditingFarm(null); if (changed) await load(); }} />}
-
-          <section className={"mt-6 grid gap-4 " + (canWriteFarms && canWriteExpenses ? "md:grid-cols-2" : "")}>
-            {canWriteFarms && <form onSubmit={addFarm} className="rounded-xl border border-zinc-200 p-4">
-              <p className="mb-3 font-medium">إضافة مزرعة</p>
-              <div className="flex flex-col gap-2">
-                <input name="name" required placeholder="اسم المزرعة" className={input} />
-                <input name="location" placeholder="الموقع (اختياري)" className={input} />
-                <button className={btn}>إضافة</button>
-              </div>
-            </form>}
-
-            {canWriteExpenses && <form onSubmit={addExpense} className="rounded-xl border border-zinc-200 p-4">
-              <p className="mb-3 font-medium">تسجيل مصروف</p>
-              {farms.length === 0 ? (
-                <p className="text-sm text-zinc-500">أضف مزرعة أولًا.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <select name="farm_id" required className={input}>
-                    {farms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                  </select>
-                  <select name="category" required className={input}>
-                    {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                  </select>
-                  <input name="expense_date" type="date" required className={input} />
-                  <input name="amount" type="number" step="0.01" min="0" required placeholder="المبلغ (AED)" className={input} />
-                  <input name="description" placeholder="وصف (اختياري)" className={input} />
-                  <button className={btn}>تسجيل</button>
-                </div>
-              )}
-            </form>}
-          </section>
 
           <section className="mt-6 rounded-xl border border-zinc-200 p-4">
-  <p className="mb-3 font-medium">المزارع</p>
-  {farms.length === 0 ? (
-    <p className="text-sm text-zinc-500">لا توجد مزارع بعد</p>
-  ) : (
-    <ul className="text-sm">
-      {farms.map((f) => (
-        <li key={f.id} className="flex items-center justify-between border-t border-zinc-100 py-1.5 first:border-t-0">
-                    <div className="flex-1">
-            <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
-            {(() => {
-              const month = new Date().toISOString().slice(0, 7);
-              const spent = expenses.filter((x) => x.farm_id === f.id && x.expense_date.startsWith(month)).reduce((s, x) => s + Number(x.amount), 0);
-              const budget = budgets[f.id];
-              const pct = budget ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
-              return (
-                <div className="mt-2">
-                  {budget ? (
-                    <>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100"><div className={"h-2 rounded-full " + (spent > budget ? "bg-red-600" : "bg-green-700")} style={{ width: pct + "%" }} /></div>
-                      <p className="mt-1 text-xs text-zinc-500">{`صُرف هذا الشهر ${spent.toLocaleString("en-US")} من ${budget.toLocaleString("en-US")} AED (${pct}%)`}</p>
-                    </>
-                  ) : <p className="text-xs text-zinc-400">لا توجد ميزانية شهرية</p>}
-                  {canWriteFarms && <input type="number" min="0" step="0.01" placeholder="ميزانية شهرية (AED) ثم Enter" defaultValue={budget ?? ""} key={f.id + (budget ?? "")} onKeyDown={(ev) => { if (ev.key === "Enter") void saveBudget(f.id, (ev.target as HTMLInputElement).value); }} className="mt-2 w-56 rounded-lg border border-zinc-300 p-1.5 text-xs" />}
-                </div>
-              );
-            })()}
-          </div>
-{canWriteFarms && <span className="flex items-center gap-3"><button title="تعديل" aria-label="تعديل" onClick={() => setEditingFarm(f)} className="rounded-md bg-green-100 p-1.5 text-green-700 hover:bg-green-200"><Pencil size={16} /></button><button title="حذف" aria-label="حذف" onClick={() => deleteFarm(f.id)} className="rounded-md bg-red-100 p-1.5 text-red-700 hover:bg-red-200"><Trash2 size={16} /></button></span>}
-</li>
-
-      ))}
-    </ul>
-  )}
-</section>
-
-<ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={canWriteExpenses ? setEditing : undefined} onDelete={canWriteExpenses ? deleteExpense : undefined} />
-{isOwner && orgId && <><InviteMember orgId={orgId} /><MembersPanel orgId={orgId} /></>}
+            <div className="mb-3 flex items-center justify-between">
+              <p className="font-medium">أحدث المصروفات</p>
+              <Link href="/expenses" className="text-sm text-green-800 hover:underline">عرض الكل</Link>
+            </div>
+            {expenses.length === 0 ? (
+              <p className="text-sm text-zinc-500">لا توجد مصروفات بعد</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-200 text-zinc-500">
+                    <th className="py-2 text-right font-medium">التاريخ</th>
+                    <th className="py-2 text-right font-medium">المزرعة</th>
+                    <th className="py-2 text-right font-medium">الفئة</th>
+                    <th className="py-2 text-right font-medium">المبلغ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.slice(0, 5).map((x) => (
+                    <tr key={x.id} className="border-b border-zinc-100">
+                      <td className="py-2">{x.expense_date}</td>
+                      <td className="py-2">{farmName(x.farm_id)}</td>
+                      <td className="py-2">{x.category}</td>
+                      <td className="py-2">AED {fmt(Number(x.amount))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
         </>
       )}
-    </main>
+    </div>
   );
 }
