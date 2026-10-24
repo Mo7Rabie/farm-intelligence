@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Charts from "./charts";
 import EditExpense from "./edit-expense";
@@ -147,7 +148,7 @@ async function deleteFarm(id: string) {
         <div>
           <p className="text-sm text-zinc-500">{orgName || "منصة إدارة وتحليل بيانات المزارع"}</p>
                   </div>
-        <button onClick={signOut} className="text-sm text-zinc-600 underline">تسجيل الخروج</button>
+                <button onClick={signOut} className="flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100"><LogOut size={16} />تسجيل الخروج</button>
       </header>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
@@ -223,7 +224,7 @@ async function deleteFarm(id: string) {
       {farms.map((f) => (
         <li key={f.id} className="flex items-center justify-between border-t border-zinc-100 py-1.5 first:border-t-0">
           <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
-{canWriteFarms && <span className="space-x-3 space-x-reverse"><button onClick={() => setEditingFarm(f)} className="text-xs text-green-800 underline">تعديل</button><button onClick={() => deleteFarm(f.id)} className="text-xs text-red-700 underline">حذف</button></span>}
+{canWriteFarms && <span className="flex items-center gap-3"><button title="تعديل" aria-label="تعديل" onClick={() => setEditingFarm(f)} className="rounded-md bg-green-100 p-1.5 text-green-700 hover:bg-green-200"><Pencil size={16} /></button><button title="حذف" aria-label="حذف" onClick={() => deleteFarm(f.id)} className="rounded-md bg-red-100 p-1.5 text-red-700 hover:bg-red-200"><Trash2 size={16} /></button></span>}
 </li>
 
       ))}

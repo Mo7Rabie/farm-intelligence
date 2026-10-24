@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Calendar, Droplets, Leaf, Pencil, Settings, Sprout, Tag, Trash2, Wallet } from "lucide-react";
 
 type Farm = { id: string; name: string };
 type Expense = {
@@ -95,27 +96,29 @@ const csv = "\uFEFF" +  [head.map(esc).join(";"), ...lines].join("\r\n");
         <p className="text-sm text-zinc-500">لا توجد بيانات مطابقة</p>
       ) : (
         <>
-          <table className="w-full text-sm">
+                              <div className="overflow-hidden rounded-xl border border-zinc-200"><table className="w-full border-collapse text-sm [&_td]:border-s [&_td]:border-zinc-200 [&_th]:border-s [&_th]:border-zinc-200 [&_td:last-child]:border-s-0 [&_th:last-child]:border-s-0">
             <thead>
-              <tr className="text-right text-zinc-500">
-                <th className="py-1">التاريخ</th><th>المزرعة</th><th>الفئة</th><th>المبلغ</th><th>إجراءات</th>
+                      <tr className="bg-zinc-100 text-right text-zinc-500 [&>th]:px-3 [&>th]:py-2 [&>th]:font-medium">
+                                    <th className="py-2"><span className="inline-flex items-center gap-1.5"><Calendar size={14} />التاريخ</span></th><th><span className="inline-flex items-center gap-1.5"><Sprout size={14} />المزرعة</span></th><th><span className="inline-flex items-center gap-1.5"><Tag size={14} />الفئة</span></th><th><span className="inline-flex items-center gap-1.5"><Wallet size={14} />المبلغ</span></th><th className="text-center"><span className="inline-flex items-center gap-1.5"><Settings size={14} />إجراءات</span></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((x) => (
                 <tr key={x.id} className="border-t border-zinc-100">
-                  <td className="py-1.5">{x.expense_date}</td>
-                  <td>{farmName(x.farm_id)}</td>
-                  <td>{x.category}</td>
+                                <td className="py-2.5"><span className="inline-flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400" />{x.expense_date}</span></td>
+                                <td><span className="inline-flex items-center gap-1.5"><Leaf size={14} className="text-green-700" />{farmName(x.farm_id)}</span></td>
+                                
+                                <td><span className="inline-flex items-center gap-1.5">{x.category === "مياه وري" ? <Droplets size={14} className="text-blue-500" /> : <Leaf size={14} className="text-green-700" />}{x.category}</span></td>
                   <td>{Number(x.amount).toLocaleString("en-US")} {x.currency}</td>
-                  <td className="space-x-3 space-x-reverse">
-  {onEdit && <button onClick={() => onEdit(x)} className="text-xs text-green-800 underline">تعديل</button>}
-  {onDelete && <button onClick={() => onDelete(x.id)} className="text-xs text-red-700 underline">حذف</button>}
-</td>
+                                <td className="text-center"><div className="flex items-center justify-center gap-3">
+    {onEdit && <button title="تعديل" aria-label="تعديل" onClick={() => onEdit(x)} className="rounded-md bg-green-100 p-1.5 text-green-700 hover:bg-green-200"><Pencil size={16} /></button>}
+    {onDelete && <button title="حذف" aria-label="حذف" onClick={() => onDelete(x.id)} className="rounded-md bg-red-100 p-1.5 text-red-700 hover:bg-red-200"><Trash2 size={16} /></button>}
+              </div></td>
                 </tr>
               ))}
             </tbody>
-          </table>
+                              </table></div>
+          <p className="mt-3 text-xs text-zinc-500">{`عرض ${rows.length} من ${filtered.length} مصروفات`}</p>
           {filtered.length > 10 && (
             <button onClick={() => setShowAll(!showAll)} className="mt-3 text-sm text-green-800 underline">
               {showAll ? "عرض أقل" : `عرض الكل (${filtered.length})`}
