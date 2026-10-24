@@ -33,7 +33,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
-
+    const [budgets, setBudgets] = useState<Record<string, number>>({});
   const load = useCallback(async () => {
     const supabase = createClient();
     const { data: userData } = await supabase.auth.getUser();
@@ -54,14 +54,16 @@ export default function Home() {
         setOrgName(org?.name ?? "");
     setRole(m.role);
 
-    const [f, e] = await Promise.all([
+            const [f, e, b] = await Promise.all([
       supabase.from("farms").select("id, name, location").eq("organization_id", m.organization_id).order("created_at"),
       supabase.from("expenses").select("id, farm_id, expense_date, category, description, amount, currency")
-        .eq("organization_id", m.organization_id).order("expense_date", { ascending: false }),
-    ]);
+                        .eq("organization_id", m.organization_id).order("expense_date", { ascending: false }),
+      supabase.from("farm_budgets").select("farm_id, monthly_budget").eq("organization_id", m.organization_id),
+        ]);
     if (f.error || e.error) setError((f.error ?? e.error)!.message);
+        setExpenses((e.data as Expense[]) ?? []);
     setFarms((f.data as Farm[]) ?? []);
-    setExpenses((e.data as Expense[]) ?? []);
+        setBudgets(Object.fromEntries(((b.data as { farm_id: string; monthly_budget: number }[]) ?? []).map((x) => [x.farm_id, Number(x.monthly_budget)])));
     setLoading(false);
   }, [router]);
 
@@ -117,6 +119,13 @@ async function deleteExpense(id: string) {
   if (!confirm("هل تريد حذف هذا المصروف؟")) return;
   setError(null);
   const { error } = await createClient().from("expenses").delete().eq("id", id);
+  if (error) setError(error.message); else await load();
+}
+async function saveBudget(farmId: string, value: string) {
+  const amount = Number(value);
+  if (!orgId || !Number.isFinite(amount) || amount < 0) { setError("الميزانية غير صحيحة"); return; }
+  setError(null);
+  const { error } = await createClient().from("farm_budgets").upsert({ farm_id: farmId, organization_id: orgId, monthly_budget: amount, updated_at: new Date().toISOString() });
   if (error) setError(error.message); else await load();
 }
 async function deleteFarm(id: string) {
@@ -223,7 +232,26 @@ async function deleteFarm(id: string) {
     <ul className="text-sm">
       {farms.map((f) => (
         <li key={f.id} className="flex items-center justify-between border-t border-zinc-100 py-1.5 first:border-t-0">
-          <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
+                    <div className="flex-1">
+            <span>{f.name}{f.location ? ` — ${f.location}` : ""}</span>
+            {(() => {
+              const month = new Date().toISOString().slice(0, 7);
+              const spent = expenses.filter((x) => x.farm_id === f.id && x.expense_date.startsWith(month)).reduce((s, x) => s + Number(x.amount), 0);
+              const budget = budgets[f.id];
+              const pct = budget ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
+              return (
+                <div className="mt-2">
+                  {budget ? (
+                    <>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100"><div className={"h-2 rounded-full " + (spent > budget ? "bg-red-600" : "bg-green-700")} style={{ width: pct + "%" }} /></div>
+                      <p className="mt-1 text-xs text-zinc-500">{`صُرف هذا الشهر ${spent.toLocaleString("en-US")} من ${budget.toLocaleString("en-US")} AED (${pct}%)`}</p>
+                    </>
+                  ) : <p className="text-xs text-zinc-400">لا توجد ميزانية شهرية</p>}
+                  {canWriteFarms && <input type="number" min="0" step="0.01" placeholder="ميزانية شهرية (AED) ثم Enter" defaultValue={budget ?? ""} key={f.id + (budget ?? "")} onKeyDown={(ev) => { if (ev.key === "Enter") void saveBudget(f.id, (ev.target as HTMLInputElement).value); }} className="mt-2 w-56 rounded-lg border border-zinc-300 p-1.5 text-xs" />}
+                </div>
+              );
+            })()}
+          </div>
 {canWriteFarms && <span className="flex items-center gap-3"><button title="تعديل" aria-label="تعديل" onClick={() => setEditingFarm(f)} className="rounded-md bg-green-100 p-1.5 text-green-700 hover:bg-green-200"><Pencil size={16} /></button><button title="حذف" aria-label="حذف" onClick={() => deleteFarm(f.id)} className="rounded-md bg-red-100 p-1.5 text-red-700 hover:bg-red-200"><Trash2 size={16} /></button></span>}
 </li>
 
