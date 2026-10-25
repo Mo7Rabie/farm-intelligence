@@ -105,7 +105,7 @@ const csv = "\uFEFF" +  [head.map(esc).join(";"), ...lines].join("\r\n");
             <tbody>
               {rows.map((x) => (
                 <tr key={x.id} className="border-t border-zinc-100">
-                                <td className="py-2.5"><span className="inline-flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400" />{x.expense_date}</span></td>
+                                <td className="py-2.5 whitespace-nowrap"><span className="inline-flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400" />{x.expense_date}</span></td>
                                 <td><span className="inline-flex items-center gap-1.5"><Leaf size={14} className="text-green-700" />{farmName(x.farm_id)}</span></td>
                                 
                                 <td><span className="inline-flex items-center gap-1.5">{x.category === "مياه وري" ? <Droplets size={14} className="text-blue-500" /> : <Leaf size={14} className="text-green-700" />}{x.category}</span></td>
