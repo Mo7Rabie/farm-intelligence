@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import EditExpense from "../edit-expense";
 import ExpensesTable from "../expenses-table";
 import { useData, CATEGORIES, type Expense } from "../use-data";
+import ImportExpenses, { type ImportRow } from "../import-expenses";
 
 export default function ExpensesPage() {
   const { loading, orgId, role, farms, expenses, error, setError, load } = useData();
@@ -38,7 +39,25 @@ export default function ExpensesPage() {
     const { error } = await createClient().from("expenses").delete().eq("id", id);
     if (error) setError(error.message); else await load();
   }
-
+  async function importRows(rows: ImportRow[]): Promise<string | null> {
+        const key = (r: ImportRow) => `${r.expense_date}|${r.farm_id}|${r.category}|${r.amount}`;
+    const supabase = createClient();
+    const { data: existing, error: fetchError } = await supabase
+      .from("expenses")
+      .select("expense_date, farm_id, category, amount");
+    if (fetchError) return fetchError.message;
+    const seen = new Set((existing ?? []).map((e) => key(e as ImportRow)));
+    const fresh = rows.slice(0, 500).filter((r) => {
+      const k = key(r);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    if (fresh.length === 0) return "كل الصفوف مكررة، ولم يتم استيراد أي شيء";
+    const payload = fresh.map((r) => ({ ...r, organization_id: orgId }));
+    const { error } = await supabase.from("expenses").insert(payload);
+    return error ? error.message : null;
+  }
   if (loading) return <p className="text-zinc-500">جارٍ التحميل...</p>;
 
   return (
@@ -70,6 +89,7 @@ export default function ExpensesPage() {
         </form>
       )}
 
+      {canWrite && <ImportExpenses farms={farms} categories={CATEGORIES} onSave={importRows} onDone={load} />}
       <ExpensesTable expenses={expenses} farms={farms} categories={CATEGORIES} onEdit={canWrite ? setEditing : undefined} onDelete={canWrite ? deleteExpense : undefined} />
     </div>
   );
