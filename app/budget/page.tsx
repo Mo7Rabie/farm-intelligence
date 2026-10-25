@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useData } from "../use-data";
 
 export default function BudgetPage() {
   const { loading, farms, expenses, budgets, error } = useData();
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
-
+ const [month, setMonth] = useState("");
+useEffect(() => { setMonth(new Date().toISOString().slice(0, 7)); }, []);
   if (loading) return <p className="text-zinc-500">جارٍ التحميل...</p>;
 
   const rows = farms.map((f) => {
