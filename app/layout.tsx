@@ -15,7 +15,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl">
       <body className="min-h-screen bg-white text-zinc-900 antialiased">
       <Sidebar />
-<main className="p-4 pt-16 md:mr-56 md:p-6">{children}</main>
+<main className="p-4 pt-16 md:mr-56 md:p-6">{children}</main>لأ
       </body>
     </html>
   );
