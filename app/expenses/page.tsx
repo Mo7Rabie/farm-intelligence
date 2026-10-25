@@ -11,7 +11,7 @@ export default function ExpensesPage() {
   const [editing, setEditing] = useState<Expense | null>(null);
 
   const canWrite = ["owner", "farm_manager", "accountant"].includes(role);
-  const input = "rounded-lg border border-zinc-300 p-2 text-sm";
+ const input = "rounded-lg border border-zinc-300 p-2 text-sm w-full min-w-0";
   const btn = "rounded-lg bg-green-800 px-4 py-2 text-sm text-white";
 
   async function addExpense(e: React.FormEvent<HTMLFormElement>) {

@@ -24,7 +24,7 @@ export default function ExpensesTable({
   const [to, setTo] = useState("");
   const [showAll, setShowAll] = useState(false);
 
-  const input = "rounded-lg border border-zinc-300 p-2 text-sm";
+  const input = "rounded-lg border border-zinc-300 p-2 text-sm w-full min-w-0";
   const farmName = (id: string) => farms.find((f) => f.id === id)?.name ?? "—";
 
   const filtered = useMemo(
