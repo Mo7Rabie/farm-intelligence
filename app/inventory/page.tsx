@@ -86,6 +86,7 @@ export default function InventoryPage() {
   const [moveItem, setMoveItem] = useState<Item | null>(null);
   const [moveType, setMoveType] = useState("purchase");
   const [historyItem, setHistoryItem] = useState<Item | null>(null);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [fCategory, setFCategory] = useState("");
   const [fFarm, setFFarm] = useState("");
@@ -152,6 +153,7 @@ export default function InventoryPage() {
 
   async function saveItem(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving) return;
     if (!orgId || !canManage) return;
     setError(null);
     setNotice(null);
@@ -184,10 +186,12 @@ export default function InventoryPage() {
       setError("سعر الوحدة لا يمكن أن يكون سالباً");
       return;
     }
+    setSaving(true);
     const supabase = createClient();
     const { error: err } = editing
       ? await supabase.from("inventory_items").update(payload).eq("id", editing.id)
       : await supabase.from("inventory_items").insert({ ...payload, organization_id: orgId });
+    setSaving(false);
     if (err) {
       setError(dbMessage(err));
       return;
@@ -199,6 +203,7 @@ export default function InventoryPage() {
 
   async function saveMovement(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving) return;
     if (!orgId || !moveItem || !canMove) return;
     setError(null);
     setNotice(null);
@@ -236,6 +241,7 @@ export default function InventoryPage() {
       setError("لا يمكن تسجيل حركة بتاريخ مستقبلي");
       return;
     }
+    setSaving(true);
     const { error: err } = await createClient().from("inventory_movements").insert({
       organization_id: orgId,
       item_id: moveItem.id,
@@ -245,6 +251,7 @@ export default function InventoryPage() {
       reason: reason || null,
       unit_price: type === "purchase" && price !== "" ? Number(price) : null,
     });
+    setSaving(false);
     if (err) {
       setError(dbMessage(err));
       return;
@@ -454,7 +461,12 @@ export default function InventoryPage() {
             </p>
           )}
           <div className="flex gap-2 md:col-span-2">
-            <button className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white">حفظ</button>
+            <button
+              disabled={saving}
+              className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {saving ? "جارٍ الحفظ..." : "حفظ"}
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -533,7 +545,12 @@ export default function InventoryPage() {
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
           <div className="flex gap-2 md:col-span-2">
-            <button className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white">تسجيل الحركة</button>
+            <button
+              disabled={saving}
+              className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {saving ? "جارٍ الحفظ..." : "تسجيل الحركة"}
+            </button>
             <button
               type="button"
               onClick={() => setMoveItem(null)}
