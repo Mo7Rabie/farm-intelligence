@@ -48,6 +48,7 @@ export default function TasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [fFarm, setFFarm] = useState("");
   const [fStatus, setFStatus] = useState("");
   const [fPriority, setFPriority] = useState("");
@@ -82,6 +83,7 @@ export default function TasksPage() {
 
   async function saveTask(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving) return;
     if (!orgId || !canManage) return;
     setError(null);
     const fd = new FormData(e.currentTarget);
@@ -108,10 +110,12 @@ export default function TasksPage() {
       setError("تاريخ الاستحقاق لا يمكن أن يسبق تاريخ البدء");
       return;
     }
+    setSaving(true);
     const supabase = createClient();
     const { error: err } = editing
       ? await supabase.from("tasks").update(payload).eq("id", editing.id)
       : await supabase.from("tasks").insert({ ...payload, organization_id: orgId });
+    setSaving(false);
     if (err) {
       setError(err.message);
       return;
@@ -310,7 +314,12 @@ export default function TasksPage() {
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
           <div className="flex gap-2 md:col-span-2">
-            <button className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white">حفظ</button>
+            <button
+              disabled={saving}
+              className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {saving ? "جارٍ الحفظ..." : "حفظ"}
+            </button>
             <button
               type="button"
               onClick={() => {
