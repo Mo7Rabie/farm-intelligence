@@ -10,18 +10,21 @@ import ImportExpenses, { type ImportRow } from "../import-expenses";
 export default function ExpensesPage() {
   const { loading, orgId, role, farms, expenses, error, setError, load } = useData();
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const canWrite = ["owner", "farm_manager", "accountant"].includes(role);
- const input = "rounded-lg border border-zinc-300 p-2 text-sm w-full min-w-0";
-  const btn = "rounded-lg bg-green-800 px-4 py-2 text-sm text-white";
+  const input = "rounded-lg border border-zinc-300 p-2 text-sm w-full min-w-0";
+  const btn = "rounded-lg bg-green-800 px-4 py-2 text-sm text-white disabled:opacity-50";
 
   async function addExpense(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving) return;
     const form = e.currentTarget;
     const fd = new FormData(form);
     const amount = Number(fd.get("amount"));
     if (!orgId || !Number.isFinite(amount) || amount < 0) { setError("المبلغ غير صحيح"); return; }
     setError(null);
+    setSaving(true);
     const { error } = await createClient().from("expenses").insert({
       organization_id: orgId,
       farm_id: String(fd.get("farm_id")),
@@ -30,6 +33,7 @@ export default function ExpensesPage() {
       description: String(fd.get("description") ?? "").trim() || null,
       amount,
     });
+    setSaving(false);
     if (error) setError(error.message); else { form.reset(); await load(); }
   }
 
@@ -39,8 +43,9 @@ export default function ExpensesPage() {
     const { error } = await createClient().from("expenses").delete().eq("id", id);
     if (error) setError(error.message); else await load();
   }
+
   async function importRows(rows: ImportRow[]): Promise<string | null> {
-        const key = (r: ImportRow) => `${r.expense_date}|${r.farm_id}|${r.category}|${r.amount}`;
+    const key = (r: ImportRow) => `${r.expense_date}|${r.farm_id}|${r.category}|${r.amount}`;
     const supabase = createClient();
     const { data: existing, error: fetchError } = await supabase
       .from("expenses")
@@ -58,6 +63,7 @@ export default function ExpensesPage() {
     const { error } = await supabase.from("expenses").insert(payload);
     return error ? error.message : null;
   }
+
   if (loading) return <p className="text-zinc-500">جارٍ التحميل...</p>;
 
   return (
@@ -83,7 +89,7 @@ export default function ExpensesPage() {
               <input name="expense_date" type="date" required className={input} />
               <input name="amount" type="number" step="0.01" min="0" required placeholder="المبلغ (AED)" className={input} />
               <input name="description" placeholder="وصف (اختياري)" className={input} />
-              <button className={btn}>تسجيل</button>
+              <button disabled={saving} className={btn}>{saving ? "جارٍ الحفظ..." : "تسجيل"}</button>
             </div>
           )}
         </form>
