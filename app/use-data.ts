@@ -35,7 +35,8 @@ export function useData() {
       .from("organization_members")
       .select("organization_id, role, organizations(name)")
       .eq("user_id", userData.user.id)
-      .limit(1);
+          .order("organization_id", { ascending: true })
+    .limit(1);
     if (memErr) { setError(memErr.message); setLoading(false); return; }
 
     const m = (mem as unknown as Membership[] | null)?.[0];
