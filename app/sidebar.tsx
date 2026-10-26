@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Sprout, Receipt, Wallet, Droplets, Users, ListChecks, TrendingUp, FileText, UserCog, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, Sprout, Receipt, Wallet, Droplets, Users, ListChecks, Boxes, TrendingUp, FileText, UserCog, Settings, Menu, X } from "lucide-react";
 
 const items = [
   { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const items = [
   { href: "/irrigation", label: "الري والمياه", icon: Droplets },
   { href: "/labor", label: "العمالة والمهام", icon: Users },
     { href: "/tasks", label: "المهام", icon: ListChecks },
+      { href: "/inventory", label: "المخزون", icon: Boxes },
   { href: "/productivity", label: "الإنتاجية", icon: TrendingUp },
   { href: "/reports", label: "التقارير", icon: FileText },
   { href: "/members", label: "إدارة الأعضاء", icon: UserCog },
