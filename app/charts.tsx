@@ -4,6 +4,7 @@ import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { useLang } from "./i18n";
 
 type Expense = { farm_id: string; expense_date: string; category: string; amount: number };
 type Farm = { id: string; name: string };
@@ -19,8 +20,9 @@ function sumBy(expenses: Expense[], key: (e: Expense) => string) {
 const fmt = (v: unknown) => `${Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 })} AED`;
 
 export default function Charts({ expenses, farms }: { expenses: Expense[]; farms: Farm[] }) {
+  const { t: tr, cat } = useLang();
   const monthly = sumBy(expenses, (e) => e.expense_date.slice(0, 7)).sort((a, b) => a.name.localeCompare(b.name));
-  const byCategory = sumBy(expenses, (e) => e.category).sort((a, b) => b.total - a.total);
+  const byCategory = sumBy(expenses, (e) => cat(e.category)).sort((a, b) => b.total - a.total);
   const byFarm = sumBy(expenses, (e) => farms.find((f) => f.id === e.farm_id)?.name ?? "—").sort((a, b) => b.total - a.total);
 
   const card = "rounded-xl border border-zinc-200 p-4";
@@ -28,7 +30,7 @@ export default function Charts({ expenses, farms }: { expenses: Expense[]; farms
   return (
     <section className="mt-6 grid gap-4 md:grid-cols-2">
       <div className={card + " md:col-span-2"}>
-        <p className="mb-3 font-medium">المصروفات الشهرية</p>
+        <p className="mb-3 font-medium">{tr("chart.monthly")}</p>
         <div dir="ltr" className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthly}>
@@ -43,7 +45,7 @@ export default function Charts({ expenses, farms }: { expenses: Expense[]; farms
       </div>
 
       <div className={card}>
-        <p className="mb-3 font-medium">توزيع المصروفات حسب الفئة</p>
+        <p className="mb-3 font-medium">{tr("chart.byCategory")}</p>
         <div dir="ltr" className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -58,7 +60,7 @@ export default function Charts({ expenses, farms }: { expenses: Expense[]; farms
       </div>
 
       <div className={card}>
-        <p className="mb-3 font-medium">مقارنة المزارع</p>
+        <p className="mb-3 font-medium">{tr("chart.byFarm")}</p>
         <div dir="ltr" className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={byFarm} layout="vertical">

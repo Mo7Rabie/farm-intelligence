@@ -30,6 +30,32 @@ const ar = {
   "common.delete": "حذف",
   "common.actions": "إجراءات",
 
+  "role.owner": "مالك",
+  "role.farm_manager": "مدير مزرعة",
+  "role.accountant": "محاسب",
+  "role.supervisor": "مشرف",
+  "role.analyst": "محلل",
+  "role.viewer": "مشاهد",
+
+  "dash.signOut": "تسجيل الخروج",
+  "dash.createOrg.title": "أنشئ مؤسستك الأولى",
+  "dash.createOrg.name": "اسم المؤسسة",
+  "dash.createOrg.btn": "إنشاء",
+  "dash.stat.farms": "عدد المزارع",
+  "dash.stat.total": "إجمالي المصروفات (AED)",
+  "dash.stat.month": "مصروفات هذا الشهر (AED)",
+  "dash.stat.records": "عدد السجلات",
+  "dash.recent": "أحدث المصروفات",
+  "dash.viewAll": "عرض الكل",
+  "dash.noExpenses": "لا توجد مصروفات بعد",
+  "dash.col.date": "التاريخ",
+  "dash.col.farm": "المزرعة",
+  "dash.col.category": "الفئة",
+  "dash.col.amount": "المبلغ",
+  "chart.monthly": "المصروفات الشهرية",
+  "chart.byCategory": "توزيع المصروفات حسب الفئة",
+  "chart.byFarm": "مقارنة المزارع",
+
   "tasks.new": "+ مهمة جديدة",
   "tasks.alert.overdue": "تنبيه: يوجد {n} مهمة متأخرة",
   "tasks.alert.dueToday": "تنبيه: يوجد {n} مهمة مستحقة اليوم",
@@ -100,6 +126,32 @@ const en: Record<Key, string> = {
   "common.delete": "Delete",
   "common.actions": "Actions",
 
+  "role.owner": "Owner",
+  "role.farm_manager": "Farm manager",
+  "role.accountant": "Accountant",
+  "role.supervisor": "Supervisor",
+  "role.analyst": "Analyst",
+  "role.viewer": "Viewer",
+
+  "dash.signOut": "Sign out",
+  "dash.createOrg.title": "Create your first organization",
+  "dash.createOrg.name": "Organization name",
+  "dash.createOrg.btn": "Create",
+  "dash.stat.farms": "Farms",
+  "dash.stat.total": "Total expenses (AED)",
+  "dash.stat.month": "This month's expenses (AED)",
+  "dash.stat.records": "Records",
+  "dash.recent": "Latest expenses",
+  "dash.viewAll": "View all",
+  "dash.noExpenses": "No expenses yet",
+  "dash.col.date": "Date",
+  "dash.col.farm": "Farm",
+  "dash.col.category": "Category",
+  "dash.col.amount": "Amount",
+  "chart.monthly": "Monthly expenses",
+  "chart.byCategory": "Expenses by category",
+  "chart.byFarm": "Farm comparison",
+
   "tasks.new": "+ New task",
   "tasks.alert.overdue": "Alert: {n} overdue task(s)",
   "tasks.alert.dueToday": "Alert: {n} task(s) due today",
@@ -145,11 +197,26 @@ const en: Record<Key, string> = {
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
 
-type Ctx = { lang: Lang; t: (key: Key, vars?: Vars) => string; toggle: () => void };
+// Expense categories are stored in Arabic in the database; this only translates the display.
+const CAT_EN: Record<string, string> = {
+  "عمالة": "Labor",
+  "مياه وري": "Water & irrigation",
+  "أسمدة": "Fertilizers",
+  "معدات": "Equipment",
+  "وقود": "Fuel",
+};
+
+type Ctx = {
+  lang: Lang;
+  t: (key: Key, vars?: Vars) => string;
+  cat: (name: string) => string;
+  toggle: () => void;
+};
 
 const LangContext = createContext<Ctx>({
   lang: "ar",
   t: (key) => ar[key],
+  cat: (name) => name,
   toggle: () => {},
 });
 
@@ -189,7 +256,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [lang],
   );
 
-  return <LangContext.Provider value={{ lang, t, toggle }}>{children}</LangContext.Provider>;
+  const cat = useCallback(
+    (name: string) => (lang === "en" ? (CAT_EN[name] ?? name) : name),
+    [lang],
+  );
+
+  return <LangContext.Provider value={{ lang, t, cat, toggle }}>{children}</LangContext.Provider>;
 }
 
 export function useLang() {
