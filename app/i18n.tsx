@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export type Lang = "ar" | "en";
-type Vars = Record<string, string | number>;
+export type Vars = Record<string, string | number>;
 
 const ar = {
   "nav.dashboard": "لوحة التحكم",
@@ -29,6 +29,7 @@ const ar = {
   "common.edit": "تعديل",
   "common.delete": "حذف",
   "common.actions": "إجراءات",
+  "common.listSep": "، ",
 
   "role.owner": "مالك",
   "role.farm_manager": "مدير مزرعة",
@@ -97,9 +98,57 @@ const ar = {
   "tasks.status.in_progress": "قيد التنفيذ",
   "tasks.status.completed": "مكتملة",
   "tasks.status.cancelled": "ملغاة",
+
+  "exp.err.amount": "المبلغ غير صحيح",
+  "exp.confirmDelete": "هل تريد حذف هذا المصروف؟",
+  "exp.form.title": "تسجيل مصروف",
+  "exp.form.submit": "تسجيل",
+  "exp.addFarmFirst": "أضف مزرعة أولًا.",
+  "exp.field.amount": "المبلغ (AED)",
+  "exp.field.descriptionOptional": "وصف (اختياري)",
+  "exp.edit.title": "تعديل المصروف",
+  "exp.exportCsv": "تصدير CSV",
+  "exp.filter.allCategories": "كل الفئات",
+  "exp.filter.from": "من تاريخ",
+  "exp.filter.to": "إلى تاريخ",
+  "exp.filter.clear": "مسح الفلاتر",
+  "exp.summary": "{n} سجل — الإجمالي: {total} AED",
+  "exp.noMatch": "لا توجد بيانات مطابقة",
+  "exp.showing": "عرض {a} من {b} مصروفات",
+  "exp.showLess": "عرض أقل",
+  "exp.showAll": "عرض الكل ({n})",
+  "exp.col.date": "التاريخ",
+  "exp.col.farm": "المزرعة",
+  "exp.col.category": "الفئة",
+  "exp.col.description": "الوصف",
+  "exp.col.amount": "المبلغ",
+  "exp.col.currency": "العملة",
+
+  "imp.open": "استيراد من CSV / Excel",
+  "imp.close": "إغلاق الاستيراد",
+  "imp.hint": "الأعمدة المطلوبة: التاريخ (YYYY-MM-DD)، المزرعة، الفئة، المبلغ. والوصف اختياري. الحد الأقصى {n} صف. أسماء الفئات بالعربي أو الإنجليزي.",
+  "imp.validLabel": "صفوف صالحة",
+  "imp.invalidLabel": "صفوف بها أخطاء",
+  "imp.line": "سطر {n}: {errs}",
+  "imp.import": "استيراد {n} صف صالح",
+  "imp.skipNote": "الصفوف التي بها أخطاء لن يتم استيرادها.",
+  "imp.summary": "تم استيراد {ok} صف بنجاح، وتم تخطي {failed} صف بها أخطاء.",
+  "imp.allDuplicates": "كل الصفوف مكررة، ولم يتم استيراد أي شيء",
+  "imp.err.type": "الملف لازم يكون CSV أو XLSX",
+  "imp.err.empty": "الملف فاضي",
+  "imp.err.maxRows": "الحد الأقصى {n} صف",
+  "imp.err.missingCols": "أعمدة ناقصة: {cols}",
+  "imp.err.date": "تاريخ غير صحيح (الصيغة YYYY-MM-DD)",
+  "imp.err.farm": "المزرعة غير موجودة",
+  "imp.err.category": "فئة غير معروفة",
+  "imp.err.amount": "مبلغ غير صحيح",
+  "imp.err.noRows": "مفيش صفوف بيانات",
+  "imp.err.size": "الملف أكبر من 2MB",
+  "imp.err.read": "تعذّر قراءة الملف",
 } as const;
 
 export type Key = keyof typeof ar;
+export type TFn = (key: Key, vars?: Vars) => string;
 
 const en: Record<Key, string> = {
   "nav.dashboard": "Dashboard",
@@ -125,6 +174,7 @@ const en: Record<Key, string> = {
   "common.edit": "Edit",
   "common.delete": "Delete",
   "common.actions": "Actions",
+  "common.listSep": ", ",
 
   "role.owner": "Owner",
   "role.farm_manager": "Farm manager",
@@ -193,6 +243,53 @@ const en: Record<Key, string> = {
   "tasks.status.in_progress": "In progress",
   "tasks.status.completed": "Completed",
   "tasks.status.cancelled": "Cancelled",
+
+  "exp.err.amount": "Invalid amount",
+  "exp.confirmDelete": "Do you want to delete this expense?",
+  "exp.form.title": "Record an expense",
+  "exp.form.submit": "Record",
+  "exp.addFarmFirst": "Add a farm first.",
+  "exp.field.amount": "Amount (AED)",
+  "exp.field.descriptionOptional": "Description (optional)",
+  "exp.edit.title": "Edit expense",
+  "exp.exportCsv": "Export CSV",
+  "exp.filter.allCategories": "All categories",
+  "exp.filter.from": "From date",
+  "exp.filter.to": "To date",
+  "exp.filter.clear": "Clear filters",
+  "exp.summary": "{n} record(s) — Total: {total} AED",
+  "exp.noMatch": "No matching data",
+  "exp.showing": "Showing {a} of {b} expenses",
+  "exp.showLess": "Show less",
+  "exp.showAll": "Show all ({n})",
+  "exp.col.date": "Date",
+  "exp.col.farm": "Farm",
+  "exp.col.category": "Category",
+  "exp.col.description": "Description",
+  "exp.col.amount": "Amount",
+  "exp.col.currency": "Currency",
+
+  "imp.open": "Import from CSV / Excel",
+  "imp.close": "Close import",
+  "imp.hint": "Required columns: Date (YYYY-MM-DD), Farm, Category, Amount. Description is optional. Max {n} rows. Category names can be Arabic or English.",
+  "imp.validLabel": "Valid rows",
+  "imp.invalidLabel": "Rows with errors",
+  "imp.line": "Line {n}: {errs}",
+  "imp.import": "Import {n} valid row(s)",
+  "imp.skipNote": "Rows with errors will not be imported.",
+  "imp.summary": "Imported {ok} row(s) successfully, skipped {failed} row(s) with errors.",
+  "imp.allDuplicates": "All rows are duplicates, nothing was imported",
+  "imp.err.type": "File must be CSV or XLSX",
+  "imp.err.empty": "The file is empty",
+  "imp.err.maxRows": "Maximum {n} rows",
+  "imp.err.missingCols": "Missing columns: {cols}",
+  "imp.err.date": "Invalid date (format YYYY-MM-DD)",
+  "imp.err.farm": "Farm not found",
+  "imp.err.category": "Unknown category",
+  "imp.err.amount": "Invalid amount",
+  "imp.err.noRows": "No data rows",
+  "imp.err.size": "File is larger than 2MB",
+  "imp.err.read": "Could not read the file",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
@@ -202,14 +299,20 @@ const CAT_EN: Record<string, string> = {
   "عمالة": "Labor",
   "مياه وري": "Water & irrigation",
   "أسمدة": "Fertilizers",
+  "شتلات": "Seedlings",
+  "مبيدات": "Pesticides",
   "معدات": "Equipment",
   "وقود": "Fuel",
+  "صيانة": "Maintenance",
+  "نقل": "Transport",
+  "أخرى": "Other",
 };
 
 type Ctx = {
   lang: Lang;
-  t: (key: Key, vars?: Vars) => string;
+  t: TFn;
   cat: (name: string) => string;
+  catKey: (name: string) => string;
   toggle: () => void;
 };
 
@@ -217,6 +320,7 @@ const LangContext = createContext<Ctx>({
   lang: "ar",
   t: (key) => ar[key],
   cat: (name) => name,
+  catKey: (name) => name,
   toggle: () => {},
 });
 
@@ -243,8 +347,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [lang]);
 
-  const t = useCallback(
-    (key: Key, vars?: Vars) => {
+  const t = useCallback<TFn>(
+    (key, vars) => {
       let s: string = dicts[lang][key] ?? key;
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
@@ -261,7 +365,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [lang],
   );
 
-  return <LangContext.Provider value={{ lang, t, cat, toggle }}>{children}</LangContext.Provider>;
+  // Accepts an Arabic or English category name and returns the Arabic value stored in the database.
+  const catKey = useCallback((name: string) => {
+    const n = name.trim().toLowerCase();
+    const hit = Object.entries(CAT_EN).find(([, v]) => v.toLowerCase() === n);
+    return hit ? hit[0] : name.trim();
+  }, []);
+
+  return (
+    <LangContext.Provider value={{ lang, t, cat, catKey, toggle }}>{children}</LangContext.Provider>
+  );
 }
 
 export function useLang() {
