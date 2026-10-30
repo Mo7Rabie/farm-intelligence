@@ -275,6 +275,13 @@ const ar = {
   "inv.mv.issue": "صرف",
   "inv.mv.return": "مرتجع",
   "inv.mv.adjustment": "تسوية جرد",
+  "reports.title": "التقارير الشهرية",
+  "reports.farm.all": "كل المزارع",
+  "reports.expensesByCategory": "المصروفات حسب الفئة (AED) — آخر 6 شهور",
+  "reports.noData": "لا توجد بيانات",
+  "reports.total": "الإجمالي",
+  "reports.category": "الفئة",
+  "reports.exportCsv": "تصدير CSV",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -550,6 +557,13 @@ const en: Record<Key, string> = {
   "inv.mv.issue": "Issue",
   "inv.mv.return": "Return",
   "inv.mv.adjustment": "Stock count adjustment",
+  "reports.title": "Monthly Reports",
+  "reports.farm.all": "All farms",
+  "reports.expensesByCategory": "Expenses by category (AED) — Last 6 months",
+  "reports.noData": "No data available",
+  "reports.total": "Total",
+  "reports.category": "Category",
+  "reports.exportCsv": "Export CSV",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
