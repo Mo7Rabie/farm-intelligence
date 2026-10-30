@@ -182,6 +182,15 @@ const ar = {
   "irr.noExpenses": "لا توجد مصروفات ري بعد",
   "irr.log": "سجل مصروفات الري",
   "irr.noRecords": "لا توجد سجلات",
+
+  "labor.title": "العمالة والمهام",
+  "labor.stat.total": "إجمالي تكلفة العمالة (AED)",
+  "labor.stat.month": "تكلفة العمالة هذا الشهر (AED)",
+  "labor.stat.share": "نسبة العمالة من كل المصروفات",
+  "labor.byFarm": "تكلفة العمالة حسب المزرعة",
+  "labor.noExpenses": "لا توجد مصروفات عمالة بعد",
+  "labor.log": "سجل مصروفات العمالة",
+  "labor.noRecords": "لا توجد سجلات",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -364,6 +373,15 @@ const en: Record<Key, string> = {
   "irr.noExpenses": "No irrigation expenses yet",
   "irr.log": "Irrigation expense log",
   "irr.noRecords": "No records",
+
+  "labor.title": "Labor & tasks",
+  "labor.stat.total": "Total labor cost (AED)",
+  "labor.stat.month": "This month's labor cost (AED)",
+  "labor.stat.share": "Labor share of all expenses",
+  "labor.byFarm": "Labor cost by farm",
+  "labor.noExpenses": "No labor expenses yet",
+  "labor.log": "Labor expense log",
+  "labor.noRecords": "No records",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
