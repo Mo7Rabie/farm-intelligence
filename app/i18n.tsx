@@ -173,6 +173,15 @@ const ar = {
   "budget.col.left": "المتبقي",
   "budget.col.pct": "النسبة",
   "budget.hint": "لتعديل الميزانية الشهرية لكل مزرعة: صفحة المزارع.",
+
+  "irr.title": "إدارة الري والمياه",
+  "irr.stat.total": "إجمالي تكلفة الري (AED)",
+  "irr.stat.month": "تكلفة الري هذا الشهر (AED)",
+  "irr.stat.avg": "متوسط التكلفة الشهرية (AED)",
+  "irr.monthly": "تكلفة الري الشهرية",
+  "irr.noExpenses": "لا توجد مصروفات ري بعد",
+  "irr.log": "سجل مصروفات الري",
+  "irr.noRecords": "لا توجد سجلات",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -346,6 +355,15 @@ const en: Record<Key, string> = {
   "budget.col.left": "Remaining",
   "budget.col.pct": "Percentage",
   "budget.hint": "To edit each farm's monthly budget, go to the Farms page.",
+
+  "irr.title": "Irrigation & water management",
+  "irr.stat.total": "Total irrigation cost (AED)",
+  "irr.stat.month": "This month's irrigation cost (AED)",
+  "irr.stat.avg": "Average monthly cost (AED)",
+  "irr.monthly": "Monthly irrigation cost",
+  "irr.noExpenses": "No irrigation expenses yet",
+  "irr.log": "Irrigation expense log",
+  "irr.noRecords": "No records",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
