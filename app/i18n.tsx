@@ -275,6 +275,7 @@ const ar = {
   "inv.mv.issue": "صرف",
   "inv.mv.return": "مرتجع",
   "inv.mv.adjustment": "تسوية جرد",
+
   "reports.title": "التقارير الشهرية",
   "reports.farm.all": "كل المزارع",
   "reports.expensesByCategory": "المصروفات حسب الفئة (AED) — آخر 6 شهور",
@@ -282,6 +283,25 @@ const ar = {
   "reports.total": "الإجمالي",
   "reports.category": "الفئة",
   "reports.exportCsv": "تصدير CSV",
+
+  "productivity.title": "الإنتاجية",
+  "productivity.subtitle": "تحليل المصروفات والأداء المالي للمزارع",
+  "productivity.loading": "جارٍ التحميل...",
+  "productivity.avgMonthly": "متوسط المصروف الشهري",
+  "productivity.monthComparison": "مقارنة هذا الشهر بالشهر السابق",
+  "productivity.noComparison": "لا توجد بيانات للمقارنة",
+  "productivity.increase": "زيادة في المصروفات",
+  "productivity.decrease": "انخفاض في المصروفات",
+  "productivity.noChange": "لا يوجد تغيير",
+  "productivity.topCategory": "أكبر فئة مصروفات",
+  "productivity.farmAverage": "متوسط المصروف الشهري لكل مزرعة",
+  "productivity.noFarms": "لا توجد مزارع بعد",
+  "productivity.farmsSummary": "ملخص المزارع",
+  "productivity.noData": "لا توجد بيانات",
+  "productivity.farm": "المزرعة",
+  "productivity.total": "الإجمالي",
+  "productivity.monthlyAverage": "المتوسط الشهري",
+  "productivity.thisMonth": "هذا الشهر",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -557,6 +577,7 @@ const en: Record<Key, string> = {
   "inv.mv.issue": "Issue",
   "inv.mv.return": "Return",
   "inv.mv.adjustment": "Stock count adjustment",
+
   "reports.title": "Monthly Reports",
   "reports.farm.all": "All farms",
   "reports.expensesByCategory": "Expenses by category (AED) — Last 6 months",
@@ -564,6 +585,25 @@ const en: Record<Key, string> = {
   "reports.total": "Total",
   "reports.category": "Category",
   "reports.exportCsv": "Export CSV",
+
+  "productivity.title": "Productivity",
+  "productivity.subtitle": "Farm expenses and financial performance analysis",
+  "productivity.loading": "Loading...",
+  "productivity.avgMonthly": "Average Monthly Expenses",
+  "productivity.monthComparison": "This Month vs Previous Month",
+  "productivity.noComparison": "No previous data to compare",
+  "productivity.increase": "Increase in expenses",
+  "productivity.decrease": "Decrease in expenses",
+  "productivity.noChange": "No change",
+  "productivity.topCategory": "Top Expense Category",
+  "productivity.farmAverage": "Average Monthly Expenses per Farm",
+  "productivity.noFarms": "No farms available",
+  "productivity.farmsSummary": "Farms Summary",
+  "productivity.noData": "No data available",
+  "productivity.farm": "Farm",
+  "productivity.total": "Total",
+  "productivity.monthlyAverage": "Monthly Average",
+  "productivity.thisMonth": "This Month",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
@@ -647,7 +687,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <LangContext.Provider value={{ lang, t, cat, catKey, toggle }}>{children}</LangContext.Provider>
+    <LangContext.Provider value={{ lang, t, cat, catKey, toggle }}>
+      {children}
+    </LangContext.Provider>
   );
 }
 
