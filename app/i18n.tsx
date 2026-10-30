@@ -302,6 +302,10 @@ const ar = {
   "productivity.total": "الإجمالي",
   "productivity.monthlyAverage": "المتوسط الشهري",
   "productivity.thisMonth": "هذا الشهر",
+
+  "members.title": "إدارة الأعضاء",
+  "members.loading": "جارٍ التحميل...",
+  "members.ownerOnly": "هذه الصفحة متاحة لمالك المؤسسة فقط.",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -604,6 +608,10 @@ const en: Record<Key, string> = {
   "productivity.total": "Total",
   "productivity.monthlyAverage": "Monthly Average",
   "productivity.thisMonth": "This Month",
+
+  "members.title": "Member Management",
+  "members.loading": "Loading...",
+  "members.ownerOnly": "This page is available to the organization owner only.",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
