@@ -1,13 +1,15 @@
 "use client";
 
 import { useData } from "../use-data";
+import { useLang } from "../i18n";
 
 const CAT = "عمالة";
 
 export default function LaborPage() {
+  const { t } = useLang();
   const { loading, farms, expenses, error } = useData();
 
-  if (loading) return <p className="text-zinc-500">جارٍ التحميل...</p>;
+  if (loading) return <p className="text-zinc-500">{t("common.loading")}</p>;
 
   const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
   const list = expenses.filter((x) => x.category === CAT);
@@ -29,28 +31,28 @@ export default function LaborPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-bold">العمالة والمهام</h1>
+      <h1 className="mb-4 text-xl font-bold">{t("labor.title")}</h1>
       {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="rounded-lg bg-green-50 p-4">
-          <p className="text-xs text-zinc-500">إجمالي تكلفة العمالة (AED)</p>
+          <p className="text-xs text-zinc-500">{t("labor.stat.total")}</p>
           <p className="mt-1 text-2xl font-medium">{fmt(total)}</p>
         </div>
         <div className="rounded-lg bg-green-50 p-4">
-          <p className="text-xs text-zinc-500">تكلفة العمالة هذا الشهر (AED)</p>
+          <p className="text-xs text-zinc-500">{t("labor.stat.month")}</p>
           <p className="mt-1 text-2xl font-medium">{fmt(monthTotal)}</p>
         </div>
         <div className="rounded-lg bg-green-50 p-4">
-          <p className="text-xs text-zinc-500">نسبة العمالة من كل المصروفات</p>
+          <p className="text-xs text-zinc-500">{t("labor.stat.share")}</p>
           <p className="mt-1 text-2xl font-medium">{share}%</p>
         </div>
       </section>
 
       <section className="mt-6 rounded-xl border border-zinc-200 p-4">
-        <p className="mb-3 font-medium">تكلفة العمالة حسب المزرعة</p>
+        <p className="mb-3 font-medium">{t("labor.byFarm")}</p>
         {byFarm.length === 0 ? (
-          <p className="text-sm text-zinc-500">لا توجد مصروفات عمالة بعد</p>
+          <p className="text-sm text-zinc-500">{t("labor.noExpenses")}</p>
         ) : (
           <div className="flex flex-col gap-2">
             {byFarm.map((b) => (
@@ -59,26 +61,25 @@ export default function LaborPage() {
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100">
                   <div className="h-3 rounded-full bg-green-700" style={{ width: Math.round((b.v / max) * 100) + "%" }} />
                 </div>
-                <span className="w-24 text-left">{fmt(b.v)}</span>
+                <span className="w-24 text-start">{fmt(b.v)}</span>
               </div>
             ))}
           </div>
         )}
       </section>
 
-
       <section className="mt-6 rounded-xl border border-zinc-200 p-4">
-        <p className="mb-3 font-medium">سجل مصروفات العمالة</p>
+        <p className="mb-3 font-medium">{t("labor.log")}</p>
         {list.length === 0 ? (
-          <p className="text-sm text-zinc-500">لا توجد سجلات</p>
+          <p className="text-sm text-zinc-500">{t("labor.noRecords")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-zinc-500">
-                <th className="py-2 text-right font-medium">التاريخ</th>
-                <th className="py-2 text-right font-medium">المزرعة</th>
-                <th className="py-2 text-right font-medium">الوصف</th>
-                <th className="py-2 text-right font-medium">المبلغ</th>
+                <th className="py-2 text-start font-medium">{t("exp.col.date")}</th>
+                <th className="py-2 text-start font-medium">{t("exp.col.farm")}</th>
+                <th className="py-2 text-start font-medium">{t("exp.col.description")}</th>
+                <th className="py-2 text-start font-medium">{t("exp.col.amount")}</th>
               </tr>
             </thead>
             <tbody>
