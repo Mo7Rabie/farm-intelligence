@@ -161,6 +161,18 @@ const ar = {
   "farms.budget.spent": "صُرف هذا الشهر {spent} من {budget} AED ({pct}%)",
   "farms.budget.none": "لا توجد ميزانية شهرية",
   "farms.budget.placeholder": "ميزانية شهرية (AED) ثم Enter",
+
+  "budget.title": "إعداد الميزانية",
+  "budget.approved": "الميزانية المعتمدة",
+  "budget.actual": "المصروفات الفعلية",
+  "budget.remaining": "المتبقي",
+  "budget.details": "تفاصيل الميزانية",
+  "budget.col.farm": "المزرعة",
+  "budget.col.budget": "الميزانية",
+  "budget.col.spent": "المصروف",
+  "budget.col.left": "المتبقي",
+  "budget.col.pct": "النسبة",
+  "budget.hint": "لتعديل الميزانية الشهرية لكل مزرعة: صفحة المزارع.",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -322,6 +334,18 @@ const en: Record<Key, string> = {
   "farms.budget.spent": "Spent this month {spent} of {budget} AED ({pct}%)",
   "farms.budget.none": "No monthly budget",
   "farms.budget.placeholder": "Monthly budget (AED), then press Enter",
+
+  "budget.title": "Budget setup",
+  "budget.approved": "Approved budget",
+  "budget.actual": "Actual expenses",
+  "budget.remaining": "Remaining",
+  "budget.details": "Budget details",
+  "budget.col.farm": "Farm",
+  "budget.col.budget": "Budget",
+  "budget.col.spent": "Spent",
+  "budget.col.left": "Remaining",
+  "budget.col.pct": "Percentage",
+  "budget.hint": "To edit each farm's monthly budget, go to the Farms page.",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
