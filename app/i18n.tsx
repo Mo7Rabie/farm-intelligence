@@ -145,6 +145,22 @@ const ar = {
   "imp.err.noRows": "مفيش صفوف بيانات",
   "imp.err.size": "الملف أكبر من 2MB",
   "imp.err.read": "تعذّر قراءة الملف",
+
+  "farms.title": "إدارة المزارع",
+  "farms.add.title": "إضافة مزرعة",
+  "farms.add.btn": "إضافة",
+  "farms.field.name": "اسم المزرعة",
+  "farms.field.location": "الموقع (اختياري)",
+  "farms.list.title": "قائمة المزارع",
+  "farms.empty": "لا توجد مزارع بعد",
+  "farms.edit.title": "تعديل المزرعة",
+  "farms.confirmDelete": "هل تريد حذف هذه المزرعة؟",
+  "farms.err.hasExpenses": "لا يمكن حذف مزرعة عليها مصروفات. احذف مصروفاتها الأول.",
+  "farms.err.budget": "الميزانية غير صحيحة",
+  "farms.err.nameRequired": "اسم المزرعة مطلوب",
+  "farms.budget.spent": "صُرف هذا الشهر {spent} من {budget} AED ({pct}%)",
+  "farms.budget.none": "لا توجد ميزانية شهرية",
+  "farms.budget.placeholder": "ميزانية شهرية (AED) ثم Enter",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -290,6 +306,22 @@ const en: Record<Key, string> = {
   "imp.err.noRows": "No data rows",
   "imp.err.size": "File is larger than 2MB",
   "imp.err.read": "Could not read the file",
+
+  "farms.title": "Farm management",
+  "farms.add.title": "Add a farm",
+  "farms.add.btn": "Add",
+  "farms.field.name": "Farm name",
+  "farms.field.location": "Location (optional)",
+  "farms.list.title": "Farms list",
+  "farms.empty": "No farms yet",
+  "farms.edit.title": "Edit farm",
+  "farms.confirmDelete": "Do you want to delete this farm?",
+  "farms.err.hasExpenses": "You cannot delete a farm that has expenses. Delete its expenses first.",
+  "farms.err.budget": "Invalid budget",
+  "farms.err.nameRequired": "Farm name is required",
+  "farms.budget.spent": "Spent this month {spent} of {budget} AED ({pct}%)",
+  "farms.budget.none": "No monthly budget",
+  "farms.budget.placeholder": "Monthly budget (AED), then press Enter",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };

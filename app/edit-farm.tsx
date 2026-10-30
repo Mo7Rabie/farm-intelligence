@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useLang } from "./i18n";
 
 type Farm = { id: string; name: string; location: string | null };
 
@@ -11,6 +12,7 @@ export default function EditFarm({
   farm: Farm;
   onDone: (changed: boolean) => void;
 }) {
+  const { t: tr } = useLang();
   const [error, setError] = useState<string | null>(null);
   const input = "rounded-lg border border-zinc-300 p-2 text-sm";
 
@@ -18,7 +20,7 @@ export default function EditFarm({
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get("name") ?? "").trim();
-    if (!name) { setError("اسم المزرعة مطلوب"); return; }
+    if (!name) { setError(tr("farms.err.nameRequired")); return; }
     const { error } = await createClient().from("farms").update({
       name,
       location: String(fd.get("location") ?? "").trim() || null,
@@ -28,14 +30,14 @@ export default function EditFarm({
 
   return (
     <form onSubmit={save} className="mt-6 rounded-xl border border-green-800 p-4">
-      <p className="mb-3 font-medium">تعديل المزرعة</p>
+      <p className="mb-3 font-medium">{tr("farms.edit.title")}</p>
       {error && <p className="mb-2 text-sm text-red-800">{error}</p>}
       <div className="flex flex-col gap-2">
-        <input name="name" defaultValue={farm.name} required placeholder="اسم المزرعة" className={input} />
-        <input name="location" defaultValue={farm.location ?? ""} placeholder="الموقع (اختياري)" className={input} />
+        <input name="name" defaultValue={farm.name} required placeholder={tr("farms.field.name")} className={input} />
+        <input name="location" defaultValue={farm.location ?? ""} placeholder={tr("farms.field.location")} className={input} />
         <div className="flex gap-2">
-          <button className="rounded-lg bg-green-800 px-4 py-2 text-sm text-white">حفظ</button>
-          <button type="button" onClick={() => onDone(false)} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm">إلغاء</button>
+          <button className="rounded-lg bg-green-800 px-4 py-2 text-sm text-white">{tr("common.save")}</button>
+          <button type="button" onClick={() => onDone(false)} className="rounded-lg border border-zinc-300 px-4 py-2 text-sm">{tr("common.cancel")}</button>
         </div>
       </div>
     </form>
