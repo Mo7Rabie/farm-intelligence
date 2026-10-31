@@ -317,6 +317,23 @@ const ar = {
   "invite.emailPlaceholder": "إيميل العضو",
   "invite.submit": "إضافة",
   "invite.added": "تمت إضافة العضو",
+
+  "login.signinTitle": "تسجيل الدخول",
+  "login.signupTitle": "إنشاء حساب جديد",
+  "login.email": "البريد الإلكتروني",
+  "login.password": "كلمة المرور (6 أحرف على الأقل)",
+  "login.busy": "جارٍ التنفيذ...",
+  "login.signin": "دخول",
+  "login.signup": "إنشاء الحساب",
+  "login.forgot": "نسيت كلمة المرور؟",
+  "login.noAccount": "ليس لديك حساب؟ أنشئ حسابًا",
+  "login.haveAccount": "لديك حساب؟ سجّل الدخول",
+  "login.err.signin": "تعذر تسجيل الدخول:",
+  "login.err.signup": "تعذر إنشاء الحساب:",
+  "login.err.reset": "تعذر إرسال الرابط:",
+  "login.ok.signup": "تم إنشاء الحساب. افتح بريدك واضغط رابط التأكيد، ثم سجّل الدخول.",
+  "login.ok.reset": "تم إرسال رابط إعادة التعيين إلى بريدك. افتحه واتبع الخطوات.",
+  "login.needEmail": "اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور؟»",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -634,6 +651,23 @@ const en: Record<Key, string> = {
   "invite.emailPlaceholder": "Member email",
   "invite.submit": "Add",
   "invite.added": "Member added",
+
+  "login.signinTitle": "Sign in",
+  "login.signupTitle": "Create a new account",
+  "login.email": "Email",
+  "login.password": "Password (at least 6 characters)",
+  "login.busy": "Please wait...",
+  "login.signin": "Sign in",
+  "login.signup": "Create account",
+  "login.forgot": "Forgot your password?",
+  "login.noAccount": "Don't have an account? Create one",
+  "login.haveAccount": "Already have an account? Sign in",
+  "login.err.signin": "Could not sign in:",
+  "login.err.signup": "Could not create the account:",
+  "login.err.reset": "Could not send the link:",
+  "login.ok.signup": "Account created. Open your email, click the confirmation link, then sign in.",
+  "login.ok.reset": "A reset link has been sent to your email. Open it and follow the steps.",
+  "login.needEmail": "Enter your email first, then click \"Forgot your password?\"",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
