@@ -114,7 +114,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <div className="p-6 text-sm text-zinc-500">
-        {isAr ? "جارٍ التحميل..." : "Loading..."}
+        {t("reports.loading")}
       </div>
     );
   }
@@ -122,7 +122,7 @@ export default function ReportsPage() {
   if (error) {
     return (
       <div className="m-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-        {isAr ? "حدث خطأ أثناء تحميل البيانات." : "Error loading data."}
+        {t("reports.error")}
       </div>
     );
   }
@@ -154,7 +154,7 @@ export default function ReportsPage() {
       {/* Farm Filter */}
       <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          {isAr ? "المزرعة" : "Farm"}
+          {t("reports.farm")}
         </label>
 
         <select
