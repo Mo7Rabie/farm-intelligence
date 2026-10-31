@@ -309,6 +309,9 @@ const ar = {
   "members.title": "إدارة الأعضاء",
   "members.loading": "جارٍ التحميل...",
   "members.ownerOnly": "هذه الصفحة متاحة لمالك المؤسسة فقط.",
+  "members.panelTitle": "أعضاء المؤسسة",
+  "members.roleChanged": "تم تغيير الدور",
+  "members.you": "(أنت)",
 
   "invite.title": "دعوة عضو",
   "invite.emailPlaceholder": "إيميل العضو",
@@ -623,6 +626,9 @@ const en: Record<Key, string> = {
   "members.title": "Member Management",
   "members.loading": "Loading...",
   "members.ownerOnly": "This page is available to the organization owner only.",
+  "members.panelTitle": "Organization members",
+  "members.roleChanged": "Role updated",
+  "members.you": "(you)",
 
   "invite.title": "Invite a member",
   "invite.emailPlaceholder": "Member email",
