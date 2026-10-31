@@ -334,6 +334,15 @@ const ar = {
   "login.ok.signup": "تم إنشاء الحساب. افتح بريدك واضغط رابط التأكيد، ثم سجّل الدخول.",
   "login.ok.reset": "تم إرسال رابط إعادة التعيين إلى بريدك. افتحه واتبع الخطوات.",
   "login.needEmail": "اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور؟»",
+
+  "reset.title": "تعيين كلمة مرور جديدة",
+  "reset.verifying": "جارٍ التحقق من الرابط... لو استمرت الرسالة، افتح رابط الإعادة من بريدك مرة أخرى.",
+  "reset.newPassword": "كلمة المرور الجديدة",
+  "reset.confirm": "أعد كتابة كلمة المرور",
+  "reset.submit": "حفظ كلمة المرور",
+  "reset.err.mismatch": "كلمتا المرور غير متطابقتين",
+  "reset.err.update": "تعذر تغيير كلمة المرور:",
+  "reset.ok": "تم تغيير كلمة المرور بنجاح. جارٍ تحويلك...",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -668,6 +677,15 @@ const en: Record<Key, string> = {
   "login.ok.signup": "Account created. Open your email, click the confirmation link, then sign in.",
   "login.ok.reset": "A reset link has been sent to your email. Open it and follow the steps.",
   "login.needEmail": "Enter your email first, then click \"Forgot your password?\"",
+
+  "reset.title": "Set a new password",
+  "reset.verifying": "Verifying the link... If this message stays, open the reset link from your email again.",
+  "reset.newPassword": "New password",
+  "reset.confirm": "Re-enter the password",
+  "reset.submit": "Save password",
+  "reset.err.mismatch": "Passwords do not match",
+  "reset.err.update": "Could not change the password:",
+  "reset.ok": "Password changed successfully. Redirecting...",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
