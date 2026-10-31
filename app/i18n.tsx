@@ -309,6 +309,11 @@ const ar = {
   "members.title": "إدارة الأعضاء",
   "members.loading": "جارٍ التحميل...",
   "members.ownerOnly": "هذه الصفحة متاحة لمالك المؤسسة فقط.",
+
+  "invite.title": "دعوة عضو",
+  "invite.emailPlaceholder": "إيميل العضو",
+  "invite.submit": "إضافة",
+  "invite.added": "تمت إضافة العضو",
 } as const;
 
 export type Key = keyof typeof ar;
@@ -618,6 +623,11 @@ const en: Record<Key, string> = {
   "members.title": "Member Management",
   "members.loading": "Loading...",
   "members.ownerOnly": "This page is available to the organization owner only.",
+
+  "invite.title": "Invite a member",
+  "invite.emailPlaceholder": "Member email",
+  "invite.submit": "Add",
+  "invite.added": "Member added",
 };
 
 const dicts: Record<Lang, Record<Key, string>> = { ar, en };
