@@ -283,6 +283,9 @@ const ar = {
   "reports.total": "الإجمالي",
   "reports.category": "الفئة",
   "reports.exportCsv": "تصدير CSV",
+  "reports.loading": "جارٍ التحميل...",
+  "reports.error": "حدث خطأ أثناء تحميل البيانات.",
+  "reports.farm": "المزرعة",
 
   "productivity.title": "الإنتاجية",
   "productivity.subtitle": "تحليل المصروفات والأداء المالي للمزارع",
@@ -589,6 +592,9 @@ const en: Record<Key, string> = {
   "reports.total": "Total",
   "reports.category": "Category",
   "reports.exportCsv": "Export CSV",
+  "reports.loading": "Loading...",
+  "reports.error": "Error loading data.",
+  "reports.farm": "Farm",
 
   "productivity.title": "Productivity",
   "productivity.subtitle": "Farm expenses and financial performance analysis",
