@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useData } from "../use-data";
+import { useLang, type Key, type TFn } from "../i18n";
 
 type Item = {
   id: string;
@@ -33,28 +34,28 @@ type Movement = {
 };
 type Member = { user_id: string; email: string; role: string };
 
-const CATEGORIES: Record<string, string> = {
-  fertilizers: "أسمدة",
-  pesticides: "مبيدات",
-  irrigation: "مستلزمات ري",
-  seeds: "بذور وشتلات",
-  tools: "أدوات ومعدات",
-  other: "مستلزمات أخرى",
+const CATEGORIES: Record<string, Key> = {
+  fertilizers: "inv.cat.fertilizers",
+  pesticides: "inv.cat.pesticides",
+  irrigation: "inv.cat.irrigation",
+  seeds: "inv.cat.seeds",
+  tools: "inv.cat.tools",
+  other: "inv.cat.other",
 };
-const UNITS: Record<string, string> = {
-  kg: "كيلوجرام",
-  g: "جرام",
-  l: "لتر",
-  ml: "ملليلتر",
-  bag: "كيس",
-  piece: "قطعة",
-  other: "وحدة أخرى",
+const UNITS: Record<string, Key> = {
+  kg: "inv.unit.kg",
+  g: "inv.unit.g",
+  l: "inv.unit.l",
+  ml: "inv.unit.ml",
+  bag: "inv.unit.bag",
+  piece: "inv.unit.piece",
+  other: "inv.unit.other",
 };
-const MOVEMENTS: Record<string, string> = {
-  purchase: "شراء",
-  issue: "صرف",
-  return: "مرتجع",
-  adjustment: "تسوية جرد",
+const MOVEMENTS: Record<string, Key> = {
+  purchase: "inv.mv.purchase",
+  issue: "inv.mv.issue",
+  return: "inv.mv.return",
+  adjustment: "inv.mv.adjustment",
 };
 
 function todayStr() {
@@ -69,12 +70,13 @@ function fmt(n: number) {
 function money(n: number) {
   return `AED ${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
-function dbMessage(err: { message: string; code?: string }) {
-  if (err.code === "23505") return "كود الصنف مستخدم من قبل في هذه المؤسسة";
+function dbMessage(err: { message: string; code?: string }, t: TFn) {
+  if (err.code === "23505") return t("inv.err.skuUsed");
   return err.message;
 }
 
 export default function InventoryPage() {
+  const { t } = useLang();
   const { loading, orgId, role, farms, error: dataError } = useData();
   const [items, setItems] = useState<Item[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -95,6 +97,10 @@ export default function InventoryPage() {
   const canManage = role === "owner" || role === "farm_manager";
   const canMove = canManage || role === "accountant";
 
+  const catLabel = (k: string) => (CATEGORIES[k] ? t(CATEGORIES[k]) : k);
+  const unitLabel = (k: string) => (UNITS[k] ? t(UNITS[k]) : k);
+  const moveLabel = (k: string) => (MOVEMENTS[k] ? t(MOVEMENTS[k]) : k);
+
   const loadItems = useCallback(async () => {
     if (!orgId) return;
     const supabase = createClient();
@@ -109,7 +115,7 @@ export default function InventoryPage() {
         .order("name"),
       supabase.rpc("list_members", { org: orgId }),
     ]);
-    if (i.error) setError(dbMessage(i.error));
+    if (i.error) setError(dbMessage(i.error, t));
     else
       setItems(
         ((i.data as Item[]) ?? []).map((x) => ({
@@ -120,32 +126,35 @@ export default function InventoryPage() {
         })),
       );
     if (!m.error) setMembers((m.data as Member[]) ?? []);
-  }, [orgId]);
+  }, [orgId, t]);
 
-  const loadHistory = useCallback(async (item: Item) => {
-    const { data, error: err } = await createClient()
-      .from("inventory_movements")
-      .select(
-        "id, movement_type, quantity, quantity_before, quantity_after, difference, unit_price, movement_date, reason, created_by, created_at",
-      )
-      .eq("item_id", item.id)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (err) {
-      setError(dbMessage(err));
-      return;
-    }
-    setHistory(
-      ((data as Movement[]) ?? []).map((x) => ({
-        ...x,
-        quantity: Number(x.quantity),
-        quantity_before: Number(x.quantity_before),
-        quantity_after: Number(x.quantity_after),
-        difference: Number(x.difference),
-        unit_price: x.unit_price === null ? null : Number(x.unit_price),
-      })),
-    );
-  }, []);
+  const loadHistory = useCallback(
+    async (item: Item) => {
+      const { data, error: err } = await createClient()
+        .from("inventory_movements")
+        .select(
+          "id, movement_type, quantity, quantity_before, quantity_after, difference, unit_price, movement_date, reason, created_by, created_at",
+        )
+        .eq("item_id", item.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (err) {
+        setError(dbMessage(err, t));
+        return;
+      }
+      setHistory(
+        ((data as Movement[]) ?? []).map((x) => ({
+          ...x,
+          quantity: Number(x.quantity),
+          quantity_before: Number(x.quantity_before),
+          quantity_after: Number(x.quantity_after),
+          difference: Number(x.difference),
+          unit_price: x.unit_price === null ? null : Number(x.unit_price),
+        })),
+      );
+    },
+    [t],
+  );
 
   useEffect(() => {
     void loadItems();
@@ -171,19 +180,19 @@ export default function InventoryPage() {
       notes: String(fd.get("notes") ?? "").trim() || null,
     };
     if (!payload.name) {
-      setError("اسم الصنف مطلوب");
+      setError(t("inv.err.nameRequired"));
       return;
     }
     if (!payload.sku) {
-      setError("كود الصنف مطلوب");
+      setError(t("inv.err.skuRequired"));
       return;
     }
     if (!Number.isFinite(minStock) || minStock < 0) {
-      setError("الحد الأدنى لا يمكن أن يكون سالباً");
+      setError(t("inv.err.minNeg"));
       return;
     }
     if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-      setError("سعر الوحدة لا يمكن أن يكون سالباً");
+      setError(t("inv.err.priceNeg"));
       return;
     }
     setSaving(true);
@@ -193,7 +202,7 @@ export default function InventoryPage() {
       : await supabase.from("inventory_items").insert({ ...payload, organization_id: orgId });
     setSaving(false);
     if (err) {
-      setError(dbMessage(err));
+      setError(dbMessage(err, t));
       return;
     }
     setShowForm(false);
@@ -214,31 +223,27 @@ export default function InventoryPage() {
     const date = String(fd.get("movement_date") ?? "") || todayStr();
     const price = String(fd.get("unit_price") ?? "");
     if (type === "adjustment" && !canManage) {
-      setError("تسوية الجرد للمالك ومدير المزرعة فقط");
+      setError(t("inv.err.adjOwnerOnly"));
       return;
     }
     if (!Number.isFinite(qty) || qty < 0 || (type !== "adjustment" && qty <= 0)) {
-      setError(
-        type === "adjustment"
-          ? "الكمية الفعلية لا يمكن أن تكون سالبة"
-          : "الكمية يجب أن تكون أكبر من صفر",
-      );
+      setError(type === "adjustment" ? t("inv.err.actualNeg") : t("inv.err.qtyPositive"));
       return;
     }
     if ((type === "issue" || type === "adjustment") && !reason) {
-      setError("السبب مطلوب للصرف وتسوية الجرد");
+      setError(t("inv.err.reasonRequired"));
       return;
     }
     if (type === "issue" && qty > moveItem.quantity) {
-      setError(`الكمية المصروفة أكبر من المتاح (${fmt(moveItem.quantity)})`);
+      setError(t("inv.err.issueTooMuch", { max: fmt(moveItem.quantity) }));
       return;
     }
     if (price !== "" && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
-      setError("سعر الوحدة غير صالح");
+      setError(t("inv.err.priceInvalid"));
       return;
     }
     if (date > todayStr()) {
-      setError("لا يمكن تسجيل حركة بتاريخ مستقبلي");
+      setError(t("inv.err.futureDate"));
       return;
     }
     setSaving(true);
@@ -253,10 +258,10 @@ export default function InventoryPage() {
     });
     setSaving(false);
     if (err) {
-      setError(dbMessage(err));
+      setError(dbMessage(err, t));
       return;
     }
-    setNotice("تم تسجيل الحركة");
+    setNotice(t("inv.notice.recorded"));
     const done = moveItem;
     setMoveItem(null);
     await loadItems();
@@ -279,26 +284,24 @@ export default function InventoryPage() {
   }
 
   async function deleteItem(item: Item) {
-    if (!confirm(`هل تريد حذف الصنف "${item.name}"؟`)) return;
+    if (!confirm(t("inv.confirmDelete", { name: item.name }))) return;
     setError(null);
     setNotice(null);
     const { error: err } = await createClient().from("inventory_items").delete().eq("id", item.id);
     if (err) {
       setError(
-        err.code === "23503" || err.code === "23001"
-          ? "لا يمكن حذف صنف عليه حركات مخزون، سجّل صرفاً أو تسوية جرد بدلاً من الحذف"
-          : dbMessage(err),
+        err.code === "23503" || err.code === "23001" ? t("inv.err.hasMovements") : dbMessage(err, t),
       );
     } else {
       await loadItems();
     }
   }
 
-  if (loading) return <p className="text-zinc-500">جار التحميل...</p>;
+  if (loading) return <p className="text-zinc-500">{t("common.loading")}</p>;
 
   const farmName = (id: string | null) =>
-    id ? (farms.find((f) => f.id === id)?.name ?? "-") : "المخزن المركزي";
-  const who = (id: string) => members.find((m) => m.user_id === id)?.email ?? "عضو";
+    id ? (farms.find((f) => f.id === id)?.name ?? "-") : t("inv.central");
+  const who = (id: string) => members.find((m) => m.user_id === id)?.email ?? t("tasks.member");
   const isLow = (i: Item) => i.min_stock > 0 && i.quantity <= i.min_stock;
 
   const q = search.trim().toLowerCase();
@@ -315,14 +318,13 @@ export default function InventoryPage() {
   const lowCount = lowItems.length;
   const totalValue = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
 
-  
   const canAdjust = canManage;
   const lastDate = (i: Item) => (i.last_movement_at ?? i.updated_at).slice(0, 10);
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">المخزون</h1>
+        <h1 className="text-xl font-bold">{t("inv.title")}</h1>
         {canManage && (
           <button
             onClick={() => {
@@ -334,7 +336,7 @@ export default function InventoryPage() {
             }}
             className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white"
           >
-            + صنف جديد
+            {t("inv.new")}
           </button>
         )}
       </div>
@@ -346,26 +348,28 @@ export default function InventoryPage() {
 
       {lowCount > 0 && (
         <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-          تنبيه: يوجد {lowCount} صنف وصل للحد الأدنى أو أقل منه:{" "}
-          {lowItems
-            .slice(0, 5)
-            .map((i) => i.name)
-            .join("، ")}
-          {lowCount > 5 ? " ..." : ""}
+          {t("inv.alert.low", {
+            n: lowCount,
+            names:
+              lowItems
+                .slice(0, 5)
+                .map((i) => i.name)
+                .join(t("common.listSep")) + (lowCount > 5 ? " ..." : ""),
+          })}
         </p>
       )}
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 p-4">
-          <p className="text-sm text-zinc-500">عدد الأصناف</p>
+          <p className="text-sm text-zinc-500">{t("inv.stat.items")}</p>
           <p className="text-2xl font-bold">{totalItems}</p>
         </div>
         <div className="rounded-xl border border-zinc-200 p-4">
-          <p className="text-sm text-zinc-500">أصناف منخفضة المخزون</p>
+          <p className="text-sm text-zinc-500">{t("inv.stat.low")}</p>
           <p className={`text-2xl font-bold ${lowCount > 0 ? "text-amber-700" : ""}`}>{lowCount}</p>
         </div>
         <div className="rounded-xl border border-zinc-200 p-4">
-          <p className="text-sm text-zinc-500">إجمالي قيمة المخزون</p>
+          <p className="text-sm text-zinc-500">{t("inv.stat.value")}</p>
           <p className="text-2xl font-bold">{money(totalValue)}</p>
         </div>
       </div>
@@ -376,13 +380,13 @@ export default function InventoryPage() {
           onSubmit={saveItem}
           className="mb-6 grid max-w-3xl gap-3 rounded-xl border border-zinc-200 p-4 md:grid-cols-2"
         >
-          <h2 className="font-medium md:col-span-2">{editing ? "تعديل صنف" : "صنف جديد"}</h2>
+          <h2 className="font-medium md:col-span-2">{editing ? t("inv.form.edit") : t("inv.form.new")}</h2>
           <input
             name="name"
             required
             maxLength={200}
             defaultValue={editing?.name ?? ""}
-            placeholder="اسم الصنف"
+            placeholder={t("inv.field.name")}
             className="rounded-lg border border-zinc-300 p-2 text-sm"
           />
           <input
@@ -390,7 +394,7 @@ export default function InventoryPage() {
             required
             maxLength={50}
             defaultValue={editing?.sku ?? ""}
-            placeholder="كود الصنف"
+            placeholder={t("inv.field.sku")}
             className="rounded-lg border border-zinc-300 p-2 text-sm"
           />
           <select
@@ -400,7 +404,7 @@ export default function InventoryPage() {
           >
             {Object.entries(CATEGORIES).map(([k, v]) => (
               <option key={k} value={k}>
-                {v}
+                {t(v)}
               </option>
             ))}
           </select>
@@ -411,7 +415,7 @@ export default function InventoryPage() {
           >
             {Object.entries(UNITS).map(([k, v]) => (
               <option key={k} value={k}>
-                {v}
+                {t(v)}
               </option>
             ))}
           </select>
@@ -420,7 +424,7 @@ export default function InventoryPage() {
             defaultValue={editing?.farm_id ?? ""}
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           >
-            <option value="">المخزن المركزي (بدون مزرعة)</option>
+            <option value="">{t("inv.field.central")}</option>
             {farms.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
@@ -428,7 +432,7 @@ export default function InventoryPage() {
             ))}
           </select>
           <label className="text-sm">
-            الحد الأدنى للمخزون
+            {t("inv.field.minStock")}
             <input
               type="number"
               name="min_stock"
@@ -439,7 +443,7 @@ export default function InventoryPage() {
             />
           </label>
           <label className="text-sm">
-            سعر الوحدة (AED)
+            {t("inv.field.unitPrice")}
             <input
               type="number"
               name="unit_price"
@@ -452,20 +456,16 @@ export default function InventoryPage() {
           <textarea
             name="notes"
             defaultValue={editing?.notes ?? ""}
-            placeholder="ملاحظات"
+            placeholder={t("inv.field.notes")}
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
-          {!editing && (
-            <p className="text-xs text-zinc-500 md:col-span-2">
-              الصنف الجديد يبدأ برصيد صفر، سجّل حركة شراء أو تسوية جرد لإدخال الرصيد.
-            </p>
-          )}
+          {!editing && <p className="text-xs text-zinc-500 md:col-span-2">{t("inv.newItemNote")}</p>}
           <div className="flex gap-2 md:col-span-2">
             <button
               disabled={saving}
               className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50"
             >
-              {saving ? "جارٍ الحفظ..." : "حفظ"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
             <button
               type="button"
@@ -475,7 +475,7 @@ export default function InventoryPage() {
               }}
               className="rounded-lg border border-zinc-300 px-4 py-2 text-sm"
             >
-              إلغاء
+              {t("common.cancel")}
             </button>
           </div>
         </form>
@@ -488,7 +488,11 @@ export default function InventoryPage() {
           className="mb-6 grid max-w-3xl gap-3 rounded-xl border border-zinc-200 p-4 md:grid-cols-2"
         >
           <h2 className="font-medium md:col-span-2">
-            حركة مخزون: {moveItem.name} (الرصيد الحالي {fmt(moveItem.quantity)} {UNITS[moveItem.unit]})
+            {t("inv.move.title", {
+              name: moveItem.name,
+              qty: fmt(moveItem.quantity),
+              unit: unitLabel(moveItem.unit),
+            })}
           </h2>
           <select
             value={moveType}
@@ -499,12 +503,12 @@ export default function InventoryPage() {
               .filter(([k]) => k !== "adjustment" || canAdjust)
               .map(([k, v]) => (
                 <option key={k} value={k}>
-                  {v}
+                  {t(v)}
                 </option>
               ))}
           </select>
           <label className="text-sm">
-            {moveType === "adjustment" ? "الكمية الفعلية بعد الجرد" : "الكمية"}
+            {moveType === "adjustment" ? t("inv.field.actualQty") : t("inv.field.qty")}
             <input
               type="number"
               name="quantity"
@@ -515,7 +519,7 @@ export default function InventoryPage() {
             />
           </label>
           <label className="text-sm">
-            التاريخ
+            {t("inv.field.date")}
             <input
               type="date"
               name="movement_date"
@@ -526,7 +530,7 @@ export default function InventoryPage() {
           </label>
           {moveType === "purchase" && (
             <label className="text-sm">
-              سعر الوحدة (اختياري)
+              {t("inv.field.priceOptional")}
               <input
                 type="number"
                 name="unit_price"
@@ -540,7 +544,9 @@ export default function InventoryPage() {
           <input
             name="reason"
             placeholder={
-              moveType === "issue" || moveType === "adjustment" ? "السبب (مطلوب)" : "السبب أو المرجع (اختياري)"
+              moveType === "issue" || moveType === "adjustment"
+                ? t("inv.field.reasonRequired")
+                : t("inv.field.reasonOptional")
             }
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
@@ -549,14 +555,14 @@ export default function InventoryPage() {
               disabled={saving}
               className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50"
             >
-              {saving ? "جارٍ الحفظ..." : "تسجيل الحركة"}
+              {saving ? t("common.saving") : t("inv.btn.recordMove")}
             </button>
             <button
               type="button"
               onClick={() => setMoveItem(null)}
               className="rounded-lg border border-zinc-300 px-4 py-2 text-sm"
             >
-              إلغاء
+              {t("common.cancel")}
             </button>
           </div>
         </form>
@@ -566,7 +572,7 @@ export default function InventoryPage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="بحث بالاسم أو الكود"
+          placeholder={t("inv.search")}
           className="col-span-2 rounded-lg border border-zinc-300 p-2 text-sm md:col-span-1"
         />
         <select
@@ -574,10 +580,10 @@ export default function InventoryPage() {
           onChange={(e) => setFCategory(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
         >
-          <option value="">كل التصنيفات</option>
+          <option value="">{t("inv.filter.allCategories")}</option>
           {Object.entries(CATEGORIES).map(([k, v]) => (
             <option key={k} value={k}>
-              {v}
+              {t(v)}
             </option>
           ))}
         </select>
@@ -586,8 +592,8 @@ export default function InventoryPage() {
           onChange={(e) => setFFarm(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
         >
-          <option value="">كل المزارع والمخازن</option>
-          <option value="central">المخزن المركزي</option>
+          <option value="">{t("inv.filter.allLocations")}</option>
+          <option value="central">{t("inv.central")}</option>
           {farms.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
@@ -596,23 +602,23 @@ export default function InventoryPage() {
         </select>
         <label className="flex items-center gap-2 rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2">
           <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
-          المنخفضة فقط
+          {t("inv.onlyLow")}
         </label>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-zinc-200">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-right">
+          <thead className="bg-zinc-50 text-start">
             <tr>
-              <th className="p-3">الصنف</th>
-              <th className="p-3">التصنيف</th>
-              <th className="p-3">المزرعة / المخزن</th>
-              <th className="p-3">الكمية</th>
-              <th className="p-3">الحد الأدنى</th>
-              <th className="p-3">سعر الوحدة</th>
-              <th className="p-3">القيمة</th>
-              <th className="p-3">آخر تحديث</th>
-              <th className="p-3">إجراءات</th>
+              <th className="p-3 text-start">{t("inv.col.item")}</th>
+              <th className="p-3 text-start">{t("inv.col.category")}</th>
+              <th className="p-3 text-start">{t("inv.col.location")}</th>
+              <th className="p-3 text-start">{t("inv.col.qty")}</th>
+              <th className="p-3 text-start">{t("inv.col.min")}</th>
+              <th className="p-3 text-start">{t("inv.col.price")}</th>
+              <th className="p-3 text-start">{t("inv.col.value")}</th>
+              <th className="p-3 text-start">{t("inv.col.updated")}</th>
+              <th className="p-3 text-start">{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -622,13 +628,13 @@ export default function InventoryPage() {
                   <p className="font-medium">{i.name}</p>
                   <p className="text-xs text-zinc-500">{i.sku}</p>
                 </td>
-                <td className="p-3">{CATEGORIES[i.category] ?? i.category}</td>
+                <td className="p-3">{catLabel(i.category)}</td>
                 <td className="p-3">{farmName(i.farm_id)}</td>
                 <td className="whitespace-nowrap p-3">
                   <span className={isLow(i) ? "font-bold text-red-700" : ""}>
-                    {fmt(i.quantity)} {UNITS[i.unit] ?? i.unit}
+                    {fmt(i.quantity)} {unitLabel(i.unit)}
                   </span>
-                  {isLow(i) && <span className="mr-2 text-xs text-red-700">منخفض</span>}
+                  {isLow(i) && <span className="ms-2 text-xs text-red-700">{t("inv.low")}</span>}
                 </td>
                 <td className="p-3">{fmt(i.min_stock)}</td>
                 <td className="whitespace-nowrap p-3">{money(i.unit_price)}</td>
@@ -639,23 +645,23 @@ export default function InventoryPage() {
                     {canMove && (
                       <>
                         <button onClick={() => openMove(i, "purchase")} className="text-green-700">
-                          شراء
+                          {t("inv.act.purchase")}
                         </button>
                         <button onClick={() => openMove(i, "issue")} className="text-green-700">
-                          صرف
+                          {t("inv.act.issue")}
                         </button>
                         <button onClick={() => openMove(i, "return")} className="text-green-700">
-                          مرتجع
+                          {t("inv.act.return")}
                         </button>
                       </>
                     )}
                     {canAdjust && (
                       <button onClick={() => openMove(i, "adjustment")} className="text-green-700">
-                        جرد
+                        {t("inv.act.adjust")}
                       </button>
                     )}
                     <button onClick={() => openHistory(i)} className="text-zinc-700">
-                      السجل
+                      {t("inv.act.history")}
                     </button>
                     {canManage && (
                       <>
@@ -669,10 +675,10 @@ export default function InventoryPage() {
                           }}
                           className="text-green-700"
                         >
-                          تعديل
+                          {t("common.edit")}
                         </button>
                         <button onClick={() => deleteItem(i)} className="text-red-700">
-                          حذف
+                          {t("common.delete")}
                         </button>
                       </>
                     )}
@@ -683,7 +689,7 @@ export default function InventoryPage() {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={9} className="p-6 text-center text-zinc-500">
-                  لا توجد أصناف
+                  {t("inv.empty")}
                 </td>
               </tr>
             )}
@@ -694,30 +700,30 @@ export default function InventoryPage() {
       {historyItem && (
         <section className="mt-6 rounded-xl border border-zinc-200 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-medium">سجل حركات: {historyItem.name}</h2>
+            <h2 className="font-medium">{t("inv.hist.title", { name: historyItem.name })}</h2>
             <button onClick={() => setHistoryItem(null)} className="text-sm text-zinc-600">
-              إغلاق
+              {t("nav.close")}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-50 text-right">
+              <thead className="bg-zinc-50 text-start">
                 <tr>
-                  <th className="p-2">التاريخ</th>
-                  <th className="p-2">النوع</th>
-                  <th className="p-2">الكمية</th>
-                  <th className="p-2">قبل</th>
-                  <th className="p-2">بعد</th>
-                  <th className="p-2">الفرق</th>
-                  <th className="p-2">السبب</th>
-                  <th className="p-2">المستخدم</th>
+                  <th className="p-2 text-start">{t("inv.field.date")}</th>
+                  <th className="p-2 text-start">{t("inv.hist.type")}</th>
+                  <th className="p-2 text-start">{t("inv.col.qty")}</th>
+                  <th className="p-2 text-start">{t("inv.hist.before")}</th>
+                  <th className="p-2 text-start">{t("inv.hist.after")}</th>
+                  <th className="p-2 text-start">{t("inv.hist.diff")}</th>
+                  <th className="p-2 text-start">{t("inv.hist.reason")}</th>
+                  <th className="p-2 text-start">{t("inv.hist.user")}</th>
                 </tr>
               </thead>
               <tbody>
                 {history.map((m) => (
                   <tr key={m.id} className="border-t border-zinc-100">
                     <td className="whitespace-nowrap p-2">{m.movement_date}</td>
-                    <td className="p-2">{MOVEMENTS[m.movement_type] ?? m.movement_type}</td>
+                    <td className="p-2">{moveLabel(m.movement_type)}</td>
                     <td className="p-2">{fmt(m.quantity)}</td>
                     <td className="p-2">{fmt(m.quantity_before)}</td>
                     <td className="p-2">{fmt(m.quantity_after)}</td>
@@ -732,7 +738,7 @@ export default function InventoryPage() {
                 {history.length === 0 && (
                   <tr>
                     <td colSpan={8} className="p-4 text-center text-zinc-500">
-                      لا توجد حركات
+                      {t("inv.hist.empty")}
                     </td>
                   </tr>
                 )}

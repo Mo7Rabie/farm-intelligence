@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useData } from "../use-data";
+import { useLang, type Key } from "../i18n";
 
 type Task = {
   id: string;
@@ -19,18 +20,8 @@ type Task = {
 };
 type Member = { user_id: string; email: string; role: string };
 
-const PRIORITIES: Record<string, string> = {
-  low: "منخفضة",
-  medium: "متوسطة",
-  high: "عالية",
-  urgent: "عاجلة",
-};
-const STATUSES: Record<string, string> = {
-  new: "جديدة",
-  in_progress: "قيد التنفيذ",
-  completed: "مكتملة",
-  cancelled: "ملغاة",
-};
+const PRIORITY_CODES = ["low", "medium", "high", "urgent"];
+const STATUS_CODES = ["new", "in_progress", "completed", "cancelled"];
 const OPEN = ["new", "in_progress"];
 
 function todayStr() {
@@ -42,6 +33,7 @@ function todayStr() {
 
 export default function TasksPage() {
   const { loading, orgId, role, farms, error: dataError } = useData();
+  const { t: tr } = useLang();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [me, setMe] = useState("");
@@ -99,15 +91,15 @@ export default function TasksPage() {
       notes: String(fd.get("notes") ?? "").trim() || null,
     };
     if (!payload.farm_id) {
-      setError("اختر المزرعة");
+      setError(tr("tasks.field.chooseFarm"));
       return;
     }
     if (!payload.title) {
-      setError("عنوان المهمة مطلوب");
+      setError(tr("tasks.err.title"));
       return;
     }
     if (payload.start_date && payload.due_date && payload.due_date < payload.start_date) {
-      setError("تاريخ الاستحقاق لا يمكن أن يسبق تاريخ البدء");
+      setError(tr("tasks.err.dates"));
       return;
     }
     setSaving(true);
@@ -136,14 +128,14 @@ export default function TasksPage() {
   }
 
   async function deleteTask(id: string) {
-    if (!confirm("هل تريد حذف هذه المهمة؟")) return;
+    if (!confirm(tr("tasks.confirmDelete"))) return;
     setError(null);
     const { error: err } = await createClient().from("tasks").delete().eq("id", id);
     if (err) setError(err.message);
     else await loadTasks();
   }
 
-  if (loading) return <p className="text-zinc-500">جار التحميل...</p>;
+  if (loading) return <p className="text-zinc-500">{tr("common.loading")}</p>;
 
   const today = todayStr();
   const isOpen = (t: Task) => OPEN.includes(t.status);
@@ -151,7 +143,9 @@ export default function TasksPage() {
   const isDueToday = (t: Task) => isOpen(t) && t.due_date === today;
   const farmName = (id: string) => farms.find((f) => f.id === id)?.name ?? "-";
   const who = (id: string | null) =>
-    id ? (members.find((m) => m.user_id === id)?.email ?? "عضو") : "-";
+    id ? (members.find((m) => m.user_id === id)?.email ?? tr("tasks.member")) : "-";
+  const prioLabel = (p: string) => tr(`tasks.prio.${p}` as Key);
+  const statusLabel = (s: string) => tr(`tasks.status.${s}` as Key);
 
   const visible = tasks.filter(
     (t) =>
@@ -168,13 +162,12 @@ export default function TasksPage() {
   const overdueCount = tasks.filter(isOverdue).length;
   const dueTodayCount = tasks.filter(isDueToday).length;
 
-  
   const editable = (t: Task) => canManage || t.assigned_to === me;
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">المهام</h1>
+        <h1 className="text-xl font-bold">{tr("nav.tasks")}</h1>
         {canManage && (
           <button
             onClick={() => {
@@ -183,7 +176,7 @@ export default function TasksPage() {
             }}
             className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white"
           >
-            + مهمة جديدة
+            {tr("tasks.new")}
           </button>
         )}
       </div>
@@ -196,12 +189,12 @@ export default function TasksPage() {
         <div className="mb-4 space-y-2">
           {overdueCount > 0 && (
             <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
-              تنبيه: يوجد {overdueCount} مهمة متأخرة
+              {tr("tasks.alert.overdue", { n: overdueCount })}
             </p>
           )}
           {dueTodayCount > 0 && (
             <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-              تنبيه: يوجد {dueTodayCount} مهمة مستحقة اليوم
+              {tr("tasks.alert.dueToday", { n: dueTodayCount })}
             </p>
           )}
         </div>
@@ -209,10 +202,10 @@ export default function TasksPage() {
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
-          ["إجمالي المهام", total],
-          ["مكتملة", completedCount],
-          ["قيد التنفيذ", inProgressCount],
-          ["متأخرة", overdueCount],
+          [tr("tasks.stat.total"), total],
+          [tr("tasks.stat.completed"), completedCount],
+          [tr("tasks.stat.inProgress"), inProgressCount],
+          [tr("tasks.stat.overdue"), overdueCount],
         ].map(([label, value]) => (
           <div key={String(label)} className="rounded-xl border border-zinc-200 p-4">
             <p className="text-sm text-zinc-500">{label}</p>
@@ -227,19 +220,21 @@ export default function TasksPage() {
           onSubmit={saveTask}
           className="mb-6 grid max-w-3xl gap-3 rounded-xl border border-zinc-200 p-4 md:grid-cols-2"
         >
-          <h2 className="font-medium md:col-span-2">{editing ? "تعديل مهمة" : "مهمة جديدة"}</h2>
+          <h2 className="font-medium md:col-span-2">
+            {editing ? tr("tasks.form.edit") : tr("tasks.form.new")}
+          </h2>
           <input
             name="title"
             required
             maxLength={200}
             defaultValue={editing?.title ?? ""}
-            placeholder="عنوان المهمة"
+            placeholder={tr("tasks.field.title")}
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
           <textarea
             name="description"
             defaultValue={editing?.description ?? ""}
-            placeholder="وصف المهمة"
+            placeholder={tr("tasks.field.description")}
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
           <select
@@ -248,7 +243,7 @@ export default function TasksPage() {
             defaultValue={editing?.farm_id ?? ""}
             className="rounded-lg border border-zinc-300 p-2 text-sm"
           >
-            <option value="">اختر المزرعة</option>
+            <option value="">{tr("tasks.field.chooseFarm")}</option>
             {farms.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
@@ -260,7 +255,7 @@ export default function TasksPage() {
             defaultValue={editing?.assigned_to ?? ""}
             className="rounded-lg border border-zinc-300 p-2 text-sm"
           >
-            <option value="">بدون مسؤول</option>
+            <option value="">{tr("tasks.field.noAssignee")}</option>
             {members.map((m) => (
               <option key={m.user_id} value={m.user_id}>
                 {m.email}
@@ -268,7 +263,7 @@ export default function TasksPage() {
             ))}
           </select>
           <label className="text-sm">
-            تاريخ البدء
+            {tr("tasks.field.startDate")}
             <input
               type="date"
               name="start_date"
@@ -277,7 +272,7 @@ export default function TasksPage() {
             />
           </label>
           <label className="text-sm">
-            تاريخ الاستحقاق
+            {tr("tasks.field.dueDate")}
             <input
               type="date"
               name="due_date"
@@ -290,9 +285,9 @@ export default function TasksPage() {
             defaultValue={editing?.priority ?? "medium"}
             className="rounded-lg border border-zinc-300 p-2 text-sm"
           >
-            {Object.entries(PRIORITIES).map(([k, v]) => (
+            {PRIORITY_CODES.map((k) => (
               <option key={k} value={k}>
-                {v}
+                {prioLabel(k)}
               </option>
             ))}
           </select>
@@ -301,16 +296,16 @@ export default function TasksPage() {
             defaultValue={editing?.status ?? "new"}
             className="rounded-lg border border-zinc-300 p-2 text-sm"
           >
-            {Object.entries(STATUSES).map(([k, v]) => (
+            {STATUS_CODES.map((k) => (
               <option key={k} value={k}>
-                {v}
+                {statusLabel(k)}
               </option>
             ))}
           </select>
           <textarea
             name="notes"
             defaultValue={editing?.notes ?? ""}
-            placeholder="ملاحظات"
+            placeholder={tr("tasks.field.notes")}
             className="rounded-lg border border-zinc-300 p-2 text-sm md:col-span-2"
           />
           <div className="flex gap-2 md:col-span-2">
@@ -318,7 +313,7 @@ export default function TasksPage() {
               disabled={saving}
               className="rounded-lg bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50"
             >
-              {saving ? "جارٍ الحفظ..." : "حفظ"}
+              {saving ? tr("common.saving") : tr("common.save")}
             </button>
             <button
               type="button"
@@ -328,7 +323,7 @@ export default function TasksPage() {
               }}
               className="rounded-lg border border-zinc-300 px-4 py-2 text-sm"
             >
-              إلغاء
+              {tr("common.cancel")}
             </button>
           </div>
         </form>
@@ -340,7 +335,7 @@ export default function TasksPage() {
           onChange={(e) => setFFarm(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
         >
-          <option value="">كل المزارع</option>
+          <option value="">{tr("tasks.filter.allFarms")}</option>
           {farms.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
@@ -352,10 +347,10 @@ export default function TasksPage() {
           onChange={(e) => setFStatus(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
         >
-          <option value="">كل الحالات</option>
-          {Object.entries(STATUSES).map(([k, v]) => (
+          <option value="">{tr("tasks.filter.allStatuses")}</option>
+          {STATUS_CODES.map((k) => (
             <option key={k} value={k}>
-              {v}
+              {statusLabel(k)}
             </option>
           ))}
         </select>
@@ -364,10 +359,10 @@ export default function TasksPage() {
           onChange={(e) => setFPriority(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
         >
-          <option value="">كل الأولويات</option>
-          {Object.entries(PRIORITIES).map(([k, v]) => (
+          <option value="">{tr("tasks.filter.allPriorities")}</option>
+          {PRIORITY_CODES.map((k) => (
             <option key={k} value={k}>
-              {v}
+              {prioLabel(k)}
             </option>
           ))}
         </select>
@@ -376,28 +371,28 @@ export default function TasksPage() {
           value={fFrom}
           onChange={(e) => setFFrom(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
-          aria-label="استحقاق من"
+          aria-label={tr("tasks.filter.dueFrom")}
         />
         <input
           type="date"
           value={fTo}
           onChange={(e) => setFTo(e.target.value)}
           className="rounded-lg border border-zinc-300 p-2 text-sm"
-          aria-label="استحقاق إلى"
+          aria-label={tr("tasks.filter.dueTo")}
         />
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-zinc-200">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-right">
+          <thead className="bg-zinc-50 text-start">
             <tr>
-              <th className="p-3">المهمة</th>
-              <th className="p-3">المزرعة</th>
-              <th className="p-3">المسؤول</th>
-              <th className="p-3">الاستحقاق</th>
-              <th className="p-3">الأولوية</th>
-              <th className="p-3">الحالة</th>
-              <th className="p-3">إجراءات</th>
+              <th className="p-3">{tr("tasks.col.task")}</th>
+              <th className="p-3">{tr("tasks.col.farm")}</th>
+              <th className="p-3">{tr("tasks.col.assignee")}</th>
+              <th className="p-3">{tr("tasks.col.due")}</th>
+              <th className="p-3">{tr("tasks.col.priority")}</th>
+              <th className="p-3">{tr("tasks.col.status")}</th>
+              <th className="p-3">{tr("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -411,10 +406,14 @@ export default function TasksPage() {
                 <td className="p-3">{who(t.assigned_to)}</td>
                 <td className="whitespace-nowrap p-3">
                   {t.due_date ?? "-"}
-                  {isOverdue(t) && <span className="mr-2 text-xs text-red-700">متأخرة</span>}
-                  {isDueToday(t) && <span className="mr-2 text-xs text-amber-700">اليوم</span>}
+                  {isOverdue(t) && (
+                    <span className="ms-2 text-xs text-red-700">{tr("tasks.stat.overdue")}</span>
+                  )}
+                  {isDueToday(t) && (
+                    <span className="ms-2 text-xs text-amber-700">{tr("tasks.badge.today")}</span>
+                  )}
                 </td>
-                <td className="p-3">{PRIORITIES[t.priority] ?? t.priority}</td>
+                <td className="p-3">{prioLabel(t.priority)}</td>
                 <td className="p-3">
                   {editable(t) ? (
                     <select
@@ -422,14 +421,14 @@ export default function TasksPage() {
                       onChange={(e) => changeStatus(t, e.target.value)}
                       className="rounded-lg border border-zinc-300 p-1 text-sm"
                     >
-                      {Object.entries(STATUSES).map(([k, v]) => (
+                      {STATUS_CODES.map((k) => (
                         <option key={k} value={k}>
-                          {v}
+                          {statusLabel(k)}
                         </option>
                       ))}
                     </select>
                   ) : (
-                    (STATUSES[t.status] ?? t.status)
+                    statusLabel(t.status)
                   )}
                 </td>
                 <td className="p-3">
@@ -442,10 +441,10 @@ export default function TasksPage() {
                         }}
                         className="text-green-700"
                       >
-                        تعديل
+                        {tr("common.edit")}
                       </button>
                       <button onClick={() => deleteTask(t.id)} className="text-red-700">
-                        حذف
+                        {tr("common.delete")}
                       </button>
                     </div>
                   )}
@@ -455,7 +454,7 @@ export default function TasksPage() {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={7} className="p-6 text-center text-zinc-500">
-                  لا توجد مهام
+                  {tr("tasks.empty")}
                 </td>
               </tr>
             )}

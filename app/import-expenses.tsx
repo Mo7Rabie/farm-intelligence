@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Papa from "papaparse";
 import { readSheet } from "read-excel-file/browser";
+import { useLang, type Key, type TFn } from "./i18n";
 
 export type Farm = { id: string; name: string };
 export type ImportRow = {
@@ -23,26 +24,36 @@ const HEAD: Record<string, string> = {
   "الوصف": "description", description: "description",
   "المبلغ": "amount", amount: "amount",
 };
-const LABEL: Record<string, string> = {
-  date: "التاريخ", farm: "المزرعة", category: "الفئة", amount: "المبلغ",
+const LABEL: Record<string, Key> = {
+  date: "exp.col.date", farm: "exp.col.farm", category: "exp.col.category", amount: "exp.col.amount",
 };
 
-async function readRows(file: File): Promise<unknown[][]> {
+async function readRows(file: File, tr: TFn): Promise<unknown[][]> {
   const name = file.name.toLowerCase();
- if (name.endsWith(".xlsx")) return await readSheet(file);
+  if (name.endsWith(".xlsx")) return await readSheet(file);
   if (name.endsWith(".csv")) {
     const text = (await file.text()).replace(/^\uFEFF/, "");
     return Papa.parse<string[]>(text, { skipEmptyLines: true }).data;
   }
-  throw new Error("الملف لازم يكون CSV أو XLSX");
+  throw new Error(tr("imp.err.type"));
 }
 
-function validate(rows: unknown[][], farms: Farm[], categories: string[]): Checked[] {
-  if (rows.length < 2) throw new Error("الملف فاضي");
-  if (rows.length - 1 > MAX_ROWS) throw new Error(`الحد الأقصى ${MAX_ROWS} صف`);
+function validate(
+  rows: unknown[][],
+  farms: Farm[],
+  categories: string[],
+  tr: TFn,
+  catKey: (name: string) => string,
+): Checked[] {
+  if (rows.length < 2) throw new Error(tr("imp.err.empty"));
+  if (rows.length - 1 > MAX_ROWS) throw new Error(tr("imp.err.maxRows", { n: MAX_ROWS }));
   const head = rows[0].map((h) => HEAD[String(h ?? "").trim().toLowerCase()] ?? "");
   const missing = ["date", "farm", "category", "amount"].filter((k) => !head.includes(k));
-  if (missing.length) throw new Error("أعمدة ناقصة: " + missing.map((k) => LABEL[k]).join("، "));
+  if (missing.length) {
+    throw new Error(
+      tr("imp.err.missingCols", { cols: missing.map((k) => tr(LABEL[k])).join(tr("common.listSep")) }),
+    );
+  }
 
   const out: Checked[] = [];
   rows.slice(1).forEach((r, i) => {
@@ -52,18 +63,19 @@ function validate(rows: unknown[][], farms: Farm[], categories: string[]): Check
 
     const rawDate = get("date");
     const date = rawDate instanceof Date ? rawDate.toISOString().slice(0, 10) : String(rawDate ?? "").trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) errors.push("تاريخ غير صحيح (الصيغة YYYY-MM-DD)");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) errors.push(tr("imp.err.date"));
 
     const farmName = String(get("farm") ?? "").trim().toLowerCase();
     const farm = farms.find((f) => f.name.trim().toLowerCase() === farmName);
-    if (!farm) errors.push("المزرعة غير موجودة");
+    if (!farm) errors.push(tr("imp.err.farm"));
 
-    const category = String(get("category") ?? "").trim();
-    if (!categories.includes(category)) errors.push("فئة غير معروفة");
+    // Accepts Arabic or English category names; always stores the Arabic value.
+    const category = catKey(String(get("category") ?? "").trim());
+    if (!categories.includes(category)) errors.push(tr("imp.err.category"));
 
     const rawAmount = String(get("amount") ?? "").replace(/,/g, "").trim();
     const amount = rawAmount === "" ? NaN : Number(rawAmount);
-    if (!Number.isFinite(amount) || amount < 0) errors.push("مبلغ غير صحيح");
+    if (!Number.isFinite(amount) || amount < 0) errors.push(tr("imp.err.amount"));
 
     const desc = String(get("description") ?? "").trim().slice(0, 200);
     out.push({
@@ -72,7 +84,7 @@ function validate(rows: unknown[][], farms: Farm[], categories: string[]): Check
       row: errors.length ? undefined : { farm_id: farm!.id, expense_date: date, category, description: desc || null, amount },
     });
   });
-  if (out.length === 0) throw new Error("مفيش صفوف بيانات");
+  if (out.length === 0) throw new Error(tr("imp.err.noRows"));
   return out;
 }
 
@@ -87,6 +99,7 @@ export default function ImportExpenses({
   onSave: (rows: ImportRow[]) => Promise<string | null>;
   onDone: () => void;
 }) {
+  const { t: tr, cat, catKey } = useLang();
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState<Checked[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -104,18 +117,18 @@ export default function ImportExpenses({
     setError(null);
     if (!file) return;
     if (file.size > MAX_SIZE) {
-      setError("الملف أكبر من 2MB");
+      setError(tr("imp.err.size"));
       return;
     }
     try {
-      setChecked(validate(await readRows(file), farms, categories));
+      setChecked(validate(await readRows(file, tr), farms, categories, tr, catKey));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذّر قراءة الملف");
+      setError(err instanceof Error ? err.message : tr("imp.err.read"));
     }
   }
 
   async function save() {
-    if (good.length === 0) return;
+    if (good.length === 0 || busy) return;
     setBusy(true);
     setError(null);
     const msg = await onSave(good);
@@ -136,24 +149,22 @@ export default function ImportExpenses({
         onClick={() => setOpen(!open)}
         className="rounded-lg border border-green-800 px-4 py-2 text-sm text-green-800"
       >
-        {open ? "إغلاق الاستيراد" : "استيراد من CSV / Excel"}
+        {open ? tr("imp.close") : tr("imp.open")}
       </button>
       {open && (
         <div className="mt-3 rounded-xl border border-zinc-200 p-4">
-          <p className="mb-2 text-sm text-zinc-500">
-            الأعمدة المطلوبة: التاريخ (YYYY-MM-DD)، المزرعة، الفئة، المبلغ. والوصف اختياري. الحد الأقصى {MAX_ROWS} صف.
-          </p>
+          <p className="mb-2 text-sm text-zinc-500">{tr("imp.hint", { n: MAX_ROWS })}</p>
           <input type="file" accept=".csv,.xlsx" onChange={pick} className="mb-3 block text-sm" />
           {error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
           {summary && (
             <p className="mb-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">
-              تم استيراد {summary.ok} صف بنجاح، وتم تخطي {summary.failed} صف بها أخطاء.
+              {tr("imp.summary", { ok: summary.ok, failed: summary.failed })}
             </p>
           )}
           {checked.length > 0 && (
             <div>
               <p className="mb-2 text-sm">
-                صفوف صالحة: <b>{good.length}</b> — صفوف بها أخطاء: <b>{bad}</b>
+                {tr("imp.validLabel")}: <b>{good.length}</b> — {tr("imp.invalidLabel")}: <b>{bad}</b>
               </p>
               {bad > 0 && (
                 <ul className="mb-3 max-h-40 overflow-auto rounded-lg bg-red-50 p-3 text-xs text-red-800">
@@ -161,7 +172,7 @@ export default function ImportExpenses({
                     .filter((c) => !c.row)
                     .map((c) => (
                       <li key={c.line}>
-                        سطر {c.line}: {c.errors.join("، ")}
+                        {tr("imp.line", { n: c.line, errs: c.errors.join(tr("common.listSep")) })}
                       </li>
                     ))}
                 </ul>
@@ -171,11 +182,11 @@ export default function ImportExpenses({
                   <table className="w-full text-xs">
                     <thead className="bg-zinc-100">
                       <tr>
-                        <th className="p-2">التاريخ</th>
-                        <th className="p-2">المزرعة</th>
-                        <th className="p-2">الفئة</th>
-                        <th className="p-2">المبلغ</th>
-                        <th className="p-2">الوصف</th>
+                        <th className="p-2">{tr("exp.col.date")}</th>
+                        <th className="p-2">{tr("exp.col.farm")}</th>
+                        <th className="p-2">{tr("exp.col.category")}</th>
+                        <th className="p-2">{tr("exp.col.amount")}</th>
+                        <th className="p-2">{tr("exp.col.description")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -183,7 +194,7 @@ export default function ImportExpenses({
                         <tr key={i} className="border-t border-zinc-100">
                           <td className="whitespace-nowrap p-2">{r.expense_date}</td>
                           <td className="p-2">{farms.find((f) => f.id === r.farm_id)?.name}</td>
-                          <td className="p-2">{r.category}</td>
+                          <td className="p-2">{cat(r.category)}</td>
                           <td className="p-2">{r.amount}</td>
                           <td className="p-2">{r.description ?? "—"}</td>
                         </tr>
@@ -198,9 +209,9 @@ export default function ImportExpenses({
                 disabled={busy || good.length === 0}
                 className="rounded-lg bg-green-800 px-4 py-2 text-sm text-white disabled:opacity-50"
               >
-                {busy ? "جارٍ الحفظ..." : `استيراد ${good.length} صف صالح`}
+                {busy ? tr("common.saving") : tr("imp.import", { n: good.length })}
               </button>
-              {bad > 0 && <p className="mt-2 text-xs text-zinc-500">الصفوف التي بها أخطاء لن يتم استيرادها.</p>}
+              {bad > 0 && <p className="mt-2 text-xs text-zinc-500">{tr("imp.skipNote")}</p>}
             </div>
           )}
         </div>
