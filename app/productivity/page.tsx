@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useData } from "../use-data";
 import { useLang } from "../i18n";
 
@@ -9,6 +10,20 @@ export default function ProductivityPage() {
 
   const isAr = lang === "ar";
 
+  // الشهر الحالي بيتحسب في المتصفح بس (عشان الـ prerender ما يفشلش)
+  const [now, setNow] = useState<string | null>(null);
+  useEffect(() => {
+    setNow(new Date().toISOString().slice(0, 7));
+  }, []);
+
+  if (loading || !now) {
+    return (
+      <p className="p-4 text-sm text-zinc-500">
+        {t("productivity.loading")}
+      </p>
+    );
+  }
+
   const fmt = (n: number) =>
     n.toLocaleString(isAr ? "ar-EG" : "en-US", {
       maximumFractionDigits: 2,
@@ -17,7 +32,7 @@ export default function ProductivityPage() {
   const sum = (arr: { amount: number }[]) =>
     arr.reduce((s, x) => s + Number(x.amount), 0);
 
-  const month = new Date().toISOString().slice(0, 7);
+  const month = now;
   const [y, m] = month.split("-").map(Number);
 
   const prev =
@@ -76,14 +91,6 @@ export default function ProductivityPage() {
   });
 
   const max = Math.max(1, ...farmRows.map((r) => r.avg));
-
-  if (loading) {
-    return (
-      <p className="p-4 text-sm text-zinc-500">
-        {t("productivity.loading")}
-      </p>
-    );
-  }
 
   return (
     <div className="space-y-6">
